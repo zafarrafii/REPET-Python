@@ -366,6 +366,11 @@ plt.show()
 <img src="images/repet_python/repet_simonline.png" width="1000">
 
 
+## audio_file.wav
+
+23 second audio excerpt from the song *Que Pena Tanto Faz* performed by *Tamy*.
+
+
 ## References
 
 - Zafar Rafii, Antoine Liutkus, and Bryan Pardo. "REPET for Background/Foreground Separation in Audio," *Blind Source Separation*, Springer, Berlin, Heidelberg, 2014. [[article](http://zafarrafii.com/Publications/Rafii-Liutkus-Pardo%20-%20REPET%20for%20Background-Foreground%20Separation%20in%20Audio%20-%202014.pdf)]
@@ -383,11 +388,12 @@ plt.show()
 - Zafar Rafii and Bryan Pardo. "A Simple Music/Voice Separation Method based on the Extraction of the Repeating Musical Structure," *36th International Conference on Acoustics, Speech and Signal Processing*, Prague, Czech Republic, May 22-27, 2011. [[article](http://zafarrafii.com/Publications/Rafii-Pardo%20-%20A%20Simple%20Music-Voice%20Separation%20Method%20based%20on%20the%20Extraction%20of%20the%20Repeating%20Musical%20Structure%20-%202011.pdf)][[poster](http://zafarrafii.com/Publications/Rafii-Pardo%20-%20A%20Simple%20Music-Voice%20Separation%20Method%20based%20on%20the%20Extraction%20of%20the%20Repeating%20Musical%20Structure%20-%202011%20(poster).pdf)]
 
 
-## Author
+# Author
 
 - Zafar Rafii
 - zafarrafii@gmail.com
-- [Website](http://zafarrafii.com/)
+- http://zafarrafii.com/
 - [CV](http://zafarrafii.com/Zafar%20Rafii%20-%20C.V..pdf)
-- [Google Scholar](https://scholar.google.com/citations?user=8wbS2EsAAAAJ&hl=en)
+- [GitHub](https://github.com/zafarrafii)
 - [LinkedIn](https://www.linkedin.com/in/zafarrafii/)
+- [Google Scholar](https://scholar.google.com/citations?user=8wbS2EsAAAAJ&hl=en)
