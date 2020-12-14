@@ -13,25 +13,31 @@ See also:
 
 This Python module implements functions for REPET:
 
+Simply copy the file `repet.py` in your working directory and you are good to go. Make sure you have Python 3 and NumPy installed.
+
 Functions:
 - [`original`](#original) - Compute the original REPET.
-- [`extended`](#extended) - Compute the extended REPET.
+- [`extended`](#extended) - Compute REPET extended.
 - [`adaptive`](#adaptive) - Compute the adaptive REPET.
 - [`sim`](#sim) - Compute REPET-SIM.
 - [`simonline`](#simonline) - Compute REPET-SIM online.
 
 ### original
 
-`background_signal = repet.original(audio_signal, sample_rate)`
+Compute the original REPET.
 
-Arguments:
 ```
-audio_signal: audio signal [number_samples, number_channels]
-sample_rate: sample rate in Hz
-background_signal: background signal [number_samples, number_channels]
+background_signal = repet.original(audio_signal, sampling_frequency)
+    
+Inputs:
+    audio_signal: audio signal (number_samples, number_channels)
+    sampling_frequency: sampling frequency in Hz
+Output:
+    background_signal: audio STFT (window_length, number_frames)
 ```
 
-#### Example: Estimate the background and foreground signals, and display their spectrograms
+#### Example: Estimate the background and foreground signals, and display their spectrograms.
+
 ```
 # Import modules
 import scipy.io.wavfile
@@ -96,16 +102,19 @@ plt.show()
 
 ### extended
 
-`background_signal = repet.extended(audio_signal, sample_rate)`
+Compute the REPET extended.
 
-Arguments:
 ```
-audio_signal: audio signal [number_samples, number_channels]
-sample_rate: sample rate in Hz
-background_signal: background signal [number_samples, number_channels]
+background_signal = repet.extended(audio_signal, sampling_frequency)
+    
+Inputs:
+    audio_signal: audio signal (number_samples, number_channels)
+    sampling_frequency: sampling frequency in Hz
+Output:
+    background_signal: audio STFT (window_length, number_frames)
 ```
 
-#### Example: Estimate the background and foreground signals, and display their spectrograms
+#### Example: Estimate the background and foreground signals, and display their spectrograms.
 ```
 import scipy.io.wavfile
 import repet
