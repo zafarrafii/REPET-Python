@@ -102,7 +102,7 @@ plt.show()
 
 ### extended
 
-Compute the REPET extended.
+Compute REPET extended.
 
 ```
 background_signal = repet.extended(audio_signal, sampling_frequency)
@@ -178,16 +178,20 @@ plt.show()
 
 ### adaptive
 
-`background_signal = repet.adaptive(audio_signal, sample_rate)`
+Compute the adaptive REPET.
 
-Arguments:
 ```
-audio_signal: audio signal [number_samples, number_channels]
-sample_rate: sample rate in Hz
-background_signal: background signal [number_samples, number_channels]
+background_signal = repet.adaptive(audio_signal, sampling_frequency)
+    
+Inputs:
+    audio_signal: audio signal (number_samples, number_channels)
+    sampling_frequency: sampling frequency in Hz
+Output:
+    background_signal: audio STFT (window_length, number_frames)
 ```
 
-#### Example: Estimate the background and foreground signals, and display their spectrograms
+#### Example: Estimate the background and foreground signals, and display their spectrograms.
+
 ```
 import scipy.io.wavfile
 import repet
@@ -251,16 +255,19 @@ plt.show()
 
 ### sim
 
-`background_signal = repet.sim(audio_signal, sample_rate)`
+Compute REPET-SIM.
 
-Arguments:
 ```
-audio_signal: audio signal [number_samples, number_channels]
-sample_rate: sample rate in Hz
-background_signal: background signal [number_samples, number_channels]
+background_signal = repet.sim(audio_signal, sampling_frequency)
+    
+Inputs:
+    audio_signal: audio signal (number_samples, number_channels)
+    sampling_frequency: sampling frequency in Hz
+Output:
+    background_signal: audio STFT (window_length, number_frames)
 ```
 
-#### Example: Estimate the background and foreground signals, and display their spectrograms
+#### Example: Estimate the background and foreground signals, and display their spectrograms.
 ```
 import scipy.io.wavfile
 import repet
@@ -324,16 +331,19 @@ plt.show()
 
 ### simonline
 
-`background_signal = repet.simonline(audio_signal, sample_rate)`
+Compute REPET-SIM online.
 
-Arguments:
 ```
-audio_signal: audio signal [number_samples, number_channels]
-sample_rate: sample rate in Hz
-background_signal: background signal [number_samples, number_channels]
+background_signal = repet.simonline(audio_signal, sampling_frequency)
+    
+Inputs:
+    audio_signal: audio signal (number_samples, number_channels)
+    sampling_frequency: sampling frequency in Hz
+Output:
+    background_signal: audio STFT (window_length, number_frames)
 ```
 
-#### Example: Estimate the background and foreground signals, and display their spectrograms
+#### Example: Estimate the background and foreground signals, and display their spectrograms.
 ```
 import scipy.io.wavfile
 import repet
