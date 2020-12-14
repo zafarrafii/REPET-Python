@@ -413,7 +413,7 @@ plt.show()
 23 second audio excerpt from the song *Que Pena Tanto Faz* performed by *Tamy*.
 
 
-## References
+# References
 
 - Bryan Pardo, Zafar Rafii, and Zhiyao Duan. "Audio Source Separation in a Musical Context," *Handbook of Systematic Musicology*, Springer, Berlin, Heidelberg, 2018. [[article](http://www.zafarrafii.com/Documents/Other/Pardo-Rafii-Duan%20-%20Audio%20Source%20Separation%20in%20a%20Musical%20Context%20-%202018.pdf)]
 
