@@ -9,7 +9,7 @@ Functions:
 - [`extended`](#extended) - Compute the extended REPET.
 - [`adaptive`](#adaptive) - Compute the adaptive REPET.
 - [`sim`](#sim) - Compute REPET-SIM.
-- [`simonline`](#simonline) - Compute the online REPET-SIM.
+- [`simonline`](#simonline) - Compute REPET-SIM online.
 
 ### original
 
