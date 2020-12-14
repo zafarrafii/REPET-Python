@@ -1,15 +1,16 @@
 # REPET-Python
 
-## repet Python module
+## repet.py
 
 repet Functions:
-- [original - REPET (original)](#repet-original-1)
-- [extended - REPET extended](#repet-extended-1)
-- [adaptive - Adaptive REPET](#adaptive-repet-1)
-- [sim - REPET-SIM](#repet-sim-1)
-- [simonline - Online REPET-SIM](#online-repet-sim-1)
+- [original - REPET (original)](#repet-original)
+- [extended - REPET extended](#repet-extended)
+- [adaptive - Adaptive REPET](#adaptive-repet)
+- [sim - REPET-SIM](#repet-sim)
+- [simonline - Online REPET-SIM](#online-repet-sim)
 
 ### REPET (original)
+
 `background_signal = repet.original(audio_signal, sample_rate)`
 
 Arguments:
@@ -81,7 +82,9 @@ plt.show()
 
 <img src="images/repet_python/repet_original.png" width="1000">
 
+
 ### REPET extended
+
 `background_signal = repet.extended(audio_signal, sample_rate)`
 
 Arguments:
@@ -152,7 +155,9 @@ plt.show()
 
 <img src="images/repet_python/repet_extended.png" width="1000">
 
+
 ### Adaptive REPET
+
 `background_signal = repet.adaptive(audio_signal, sample_rate)`
 
 Arguments:
@@ -223,7 +228,9 @@ plt.show()
 
 <img src="images/repet_python/repet_adaptive.png" width="1000">
 
+
 ### REPET-SIM
+
 `background_signal = repet.sim(audio_signal, sample_rate)`
 
 Arguments:
@@ -294,7 +301,9 @@ plt.show()
 
 <img src="images/repet_python/repet_sim.png" width="1000">
 
+
 ### Online REPET-SIM
+
 `background_signal = repet.simonline(audio_signal, sample_rate)`
 
 Arguments:
