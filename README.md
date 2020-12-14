@@ -2,14 +2,16 @@
 
 ## repet.py
 
-repet Functions:
-- [original - REPET (original)](#repet-original)
-- [extended - REPET extended](#repet-extended)
-- [adaptive - Adaptive REPET](#adaptive-repet)
-- [sim - REPET-SIM](#repet-sim)
-- [simonline - Online REPET-SIM](#online-repet-sim)
+This Python module implements functions for the REPET:
 
-### REPET (original)
+Functions:
+- [`original`](#original) - Compute the original REPET.
+- [`extended`](#extended) - Compute the extended REPET.
+- [`adaptive`](#adaptive) - Compute the adaptive REPET.
+- [`sim`](#sim) - Compute REPET-SIM.
+- [`simonline`](#simonline) - Compute the online REPET-SIM.
+
+### original
 
 `background_signal = repet.original(audio_signal, sample_rate)`
 
@@ -20,7 +22,7 @@ sample_rate: sample rate in Hz
 background_signal: background signal [number_samples, number_channels]
 ```
 
-Example: Estimate the background and foreground signals, and display their spectrograms
+#### Example: Estimate the background and foreground signals, and display their spectrograms
 ```
 # Import modules
 import scipy.io.wavfile
@@ -83,7 +85,7 @@ plt.show()
 <img src="images/repet_python/repet_original.png" width="1000">
 
 
-### REPET extended
+### extended
 
 `background_signal = repet.extended(audio_signal, sample_rate)`
 
@@ -94,7 +96,7 @@ sample_rate: sample rate in Hz
 background_signal: background signal [number_samples, number_channels]
 ```
 
-Example: Estimate the background and foreground signals, and display their spectrograms
+#### Example: Estimate the background and foreground signals, and display their spectrograms
 ```
 import scipy.io.wavfile
 import repet
@@ -156,7 +158,7 @@ plt.show()
 <img src="images/repet_python/repet_extended.png" width="1000">
 
 
-### Adaptive REPET
+### adaptive
 
 `background_signal = repet.adaptive(audio_signal, sample_rate)`
 
@@ -167,7 +169,7 @@ sample_rate: sample rate in Hz
 background_signal: background signal [number_samples, number_channels]
 ```
 
-Example: Estimate the background and foreground signals, and display their spectrograms
+#### Example: Estimate the background and foreground signals, and display their spectrograms
 ```
 import scipy.io.wavfile
 import repet
@@ -229,7 +231,7 @@ plt.show()
 <img src="images/repet_python/repet_adaptive.png" width="1000">
 
 
-### REPET-SIM
+### sim
 
 `background_signal = repet.sim(audio_signal, sample_rate)`
 
@@ -240,7 +242,7 @@ sample_rate: sample rate in Hz
 background_signal: background signal [number_samples, number_channels]
 ```
 
-Example: Estimate the background and foreground signals, and display their spectrograms
+#### Example: Estimate the background and foreground signals, and display their spectrograms
 ```
 import scipy.io.wavfile
 import repet
@@ -302,7 +304,7 @@ plt.show()
 <img src="images/repet_python/repet_sim.png" width="1000">
 
 
-### Online REPET-SIM
+### simonline
 
 `background_signal = repet.simonline(audio_signal, sample_rate)`
 
@@ -313,7 +315,7 @@ sample_rate: sample rate in Hz
 background_signal: background signal [number_samples, number_channels]
 ```
 
-Example: Estimate the background and foreground signals, and display their spectrograms
+#### Example: Estimate the background and foreground signals, and display their spectrograms
 ```
 import scipy.io.wavfile
 import repet
