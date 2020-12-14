@@ -1,8 +1,17 @@
 # REPET-Python
 
+REPeating Pattern Extraction Technique (REPET) in **Python** for audio source separation.
+
+- [`repet.py`](#repetpy): Python module with the REPET functions.
+- [`examples.ipynb`](#examplesipynb): Jupyter notebook with some examples.
+- [`audio_file.wav`](#audio_filewav): audio file used for the examples.
+
+See also:
+- [REPET-Matlab](https://github.com/zafarrafii/REPET-Matlab): REPET in **Matlab** for audio source separation.
+
 ## repet.py
 
-This Python module implements functions for the REPET:
+This Python module implements functions for REPET:
 
 Functions:
 - [`original`](#original) - Compute the original REPET.
