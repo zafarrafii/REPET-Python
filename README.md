@@ -23,7 +23,7 @@ Functions:
 - [`extended`](#extended) - Compute REPET extended.
 - [`adaptive`](#adaptive) - Compute the adaptive REPET.
 - [`sim`](#sim) - Compute REPET-SIM.
-- [`simonline`](#simonline) - Compute REPET-SIM online.
+- [`simonline`](#simonline) - Compute the online REPET-SIM.
 
 ### original
 
@@ -334,7 +334,7 @@ plt.show()
 
 ### simonline
 
-Compute REPET-SIM online.
+Compute the online REPET-SIM.
 
 ```
 background_signal = repet.simonline(audio_signal, sampling_frequency)
