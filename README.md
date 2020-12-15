@@ -16,7 +16,7 @@ See also:
 
 This Python module implements functions for REPET:
 
-Simply copy the file `repet.py` in your working directory and you are good to go. Make sure you have Python 3 and NumPy installed.
+Simply copy the file `repet.py` in your working directory and you are good to go. Make sure you have Python 3, NumPy, and SciPy installed.
 
 Functions:
 - [`original`](#original) - Compute the original REPET.
