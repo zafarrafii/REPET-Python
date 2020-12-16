@@ -14,7 +14,7 @@ See also:
 
 ## repet.py
 
-This Python module implements functions for REPET:
+This Python module implements a number of functions for REPET:
 
 Simply copy the file `repet.py` in your working directory and you are good to go. Make sure you have Python 3, NumPy, and SciPy installed.
 
@@ -118,6 +118,7 @@ Output:
 ```
 
 #### Example: Estimate the background and foreground signals, and display their spectrograms.
+
 ```
 import scipy.io.wavfile
 import repet
@@ -271,6 +272,7 @@ Output:
 ```
 
 #### Example: Estimate the background and foreground signals, and display their spectrograms.
+
 ```
 import scipy.io.wavfile
 import repet
@@ -347,6 +349,7 @@ Output:
 ```
 
 #### Example: Estimate the background and foreground signals, and display their spectrograms.
+
 ```
 import scipy.io.wavfile
 import repet
