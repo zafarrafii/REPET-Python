@@ -1,10 +1,21 @@
 """
 This Python module implements a number of functions for the REpeating Pattern Extraction Technique (REPET).
+    Repetition is a fundamental element in generating and perceiving structure. In audio, mixtures are 
+    often composed of structures where a repeating background signal is superimposed with a varying 
+    foreground signal (e.g., a singer overlaying varying vocals on a repeating accompaniment or a varying 
+    speech signal mixed up with a repeating background noise). On this basis, we present the REpeating 
+    Pattern Extraction Technique (REPET), a simple approach for separating the repeating background from 
+    the non-repeating foreground in an audio mixture. The basic idea is to find the repeating elements in 
+    the mixture, derive the underlying repeating models, and extract the repeating background by comparing 
+    the models to the mixture. Unlike other separation approaches, REPET does not depend on special 
+    parameterizations, does not rely on complex frameworks, and does not require external information. 
+    Because it is only based on repetition, it has the advantage of being simple, fast, blind, and 
+    therefore completely and easily automatable.
 
 Functions:
     original - Compute the original REPET.
     extended - Compute REPET extended.
-    adaptive - Compute the Adaptive REPET.
+    adaptive - Compute the adaptive REPET.
     sim - Compute REPET-SIM.
     simonline - Compute the online REPET-SIM.
 
@@ -20,25 +31,15 @@ Author:
     http://zafarrafii.com
     https://github.com/zafarrafii
     https://www.linkedin.com/in/zafarrafii/
-    12/16/20
+    12/17/20
 """
 
 import numpy as np
 import scipy.signal
+import matplotlib.pyplot as plt
 
 
-# Public functions/variables
-# Window length in samples (audio stationary around 40 ms; power of 2 for fast FFT and constant overlap-add)
-windowlength = lambda sampling_frequency: 2 ** int(
-    np.ceil(np.log2(0.04 * sampling_frequency))
-)
-
-# Window function (periodic Hamming window for constant overlap-add)
-windowfunction = lambda window_length: scipy.signal.hamming(window_length, False)
-
-# Step length (half the window length for constant overlap-add)
-steplength = lambda window_length: round(window_length / 2)
-
+# Public variables
 # Cutoff frequency in Hz for the dual high-pass filter of the foreground (vocals are rarely below 100 Hz)
 cutoff_frequency = 100
 
@@ -78,10 +79,12 @@ def original(audio_signal, sampling_frequency):
     Example: Estimate the background and foreground signals, and display their spectrograms.
     """
 
-    # Get the number of samples and channels from the audio signal
+    # Get the number of samples and channels in the audio signal
     number_samples, number_channels = np.shape(audio_signal)
 
     # Set the parameters for the STFT
+    # (audio stationary around 40 ms, power of 2 for fast FFT and constant overlap-add (COLA),
+    # periodic Hamming window for COLA, and step equal half the window length for COLA)
     window_length = pow(2, int(np.ceil(np.log2(0.04 * sampling_frequency))))
     window_function = scipy.signal.hamming(window_length, sym=False)
     step_length = int(window_length / 2)
@@ -109,10 +112,11 @@ def original(audio_signal, sampling_frequency):
         # Compute the STFT of the current channel
         audio_stft[:, :, i] = _stft(audio_signal[:, i], window_function, step_length)
 
-    # Magnitude spectrogram (with DC component and without mirrored frequencies)
+    # Derive the magnitude spectrogram (with the DC component and without the mirrored frequencies)
     audio_spectrogram = abs(audio_stft[0 : int(window_length / 2) + 1, :, :])
 
-    # Beat spectrum of the spectrograms averaged over the channels (squared to emphasize peaks of periodicitiy)
+    # Compute the beat spectrum of the spectrograms averaged over the channels
+    # (take the square to emphasize peaks of periodicitiy)
     beat_spectrum = _beatspectrum(np.power(np.mean(audio_spectrogram, axis=2), 2))
 
     # Period range in time frames for the beat spectrum
@@ -156,7 +160,7 @@ def original(audio_signal, sampling_frequency):
     return background_signal
 
 
-def extended(audio_signal, sample_rate):
+def extended(audio_signal, sampling_frequency):
     """
     Compute REPET extended.
 
@@ -176,8 +180,8 @@ def extended(audio_signal, sample_rate):
     number_samples, number_channels = np.shape(audio_signal)
 
     # Segmentation length, step, and overlap in samples
-    segment_length2 = round(segment_length * sample_rate)
-    segment_step2 = round(segment_step * sample_rate)
+    segment_length2 = round(segment_length * sampling_frequency)
+    segment_step2 = round(segment_step * sampling_frequency)
     segment_overlap2 = segment_length2 - segment_step2
 
     # One segment if the signal is too short
@@ -193,17 +197,21 @@ def extended(audio_signal, sample_rate):
         # Triangular window for the overlapping parts
         segment_window = scipy.signal.triang(2 * segment_overlap2)
 
-    # Window length, window function, and step length for the STFT
-    window_length = windowlength(sample_rate)
-    window_function = windowfunction(window_length)
-    step_length = steplength(window_length)
+    # Set the parameters for the STFT
+    # (audio stationary around 40 ms, power of 2 for fast FFT and constant overlap-add (COLA),
+    # periodic Hamming window for COLA, and step equal half the window length for COLA)
+    window_length = pow(2, int(np.ceil(np.log2(0.04 * sampling_frequency))))
+    window_function = scipy.signal.hamming(window_length, sym=False)
+    step_length = int(window_length / 2)
 
     # Period range in time frames for the beat spectrum
-    period_range2 = np.round(period_range * sample_rate / step_length).astype(int)
+    period_range2 = np.round(period_range * sampling_frequency / step_length).astype(
+        int
+    )
 
     # Cutoff frequency in frequency channels for the dual high-pass filter of the foreground
     cutoff_frequency2 = (
-        int(np.ceil(cutoff_frequency * (window_length - 1) / sample_rate)) - 1
+        int(np.ceil(cutoff_frequency * (window_length - 1) / sampling_frequency)) - 1
     )
 
     # Initialize background signal
@@ -328,7 +336,7 @@ def extended(audio_signal, sample_rate):
     return background_signal
 
 
-def adaptive(audio_signal, sample_rate):
+def adaptive(audio_signal, sampling_frequency):
     """
     Compute the adaptive REPET.
 
@@ -350,10 +358,12 @@ def adaptive(audio_signal, sample_rate):
     # Number of samples and channels
     number_samples, number_channels = np.shape(audio_signal)
 
-    # Window length, window function, and step length for the STFT
-    window_length = windowlength(sample_rate)
-    window_function = windowfunction(window_length)
-    step_length = steplength(window_length)
+    # Set the parameters for the STFT
+    # (audio stationary around 40 ms, power of 2 for fast FFT and constant overlap-add (COLA),
+    # periodic Hamming window for COLA, and step equal half the window length for COLA)
+    window_length = pow(2, int(np.ceil(np.log2(0.04 * sampling_frequency))))
+    window_function = scipy.signal.hamming(window_length, sym=False)
+    step_length = int(window_length / 2)
 
     # Number of time frames
     number_times = int(
@@ -375,8 +385,8 @@ def adaptive(audio_signal, sample_rate):
     audio_spectrogram = abs(audio_stft[0 : int(window_length / 2) + 1, :, :])
 
     # Segment length and step in time frames for the beat spectrogram
-    segment_length2 = int(round(segment_length * sample_rate / step_length))
-    segment_step2 = int(round(segment_step * sample_rate / step_length))
+    segment_length2 = int(round(segment_length * sampling_frequency / step_length))
+    segment_step2 = int(round(segment_step * sampling_frequency / step_length))
 
     # Beat spectrogram of the spectrograms averaged over the channels (squared to emphasize peaks of periodicitiy)
     beat_spectrogram = _beatspectrogram(
@@ -384,14 +394,16 @@ def adaptive(audio_signal, sample_rate):
     )
 
     # Period range in time frames for the beat spectrogram
-    period_range2 = np.round(period_range * sample_rate / step_length).astype(int)
+    period_range2 = np.round(period_range * sampling_frequency / step_length).astype(
+        int
+    )
 
     # Repeating periods in time frames given the period range
     repeating_periods = _periods(beat_spectrogram, period_range2)
 
     # Cutoff frequency in frequency channels for the dual high-pass filter of the foreground
     cutoff_frequency2 = (
-        int(np.ceil(cutoff_frequency * (window_length - 1) / sample_rate)) - 1
+        int(np.ceil(cutoff_frequency * (window_length - 1) / sampling_frequency)) - 1
     )
 
     # Initialize the background signal
@@ -424,7 +436,7 @@ def adaptive(audio_signal, sample_rate):
     return background_signal
 
 
-def sim(audio_signal, sample_rate):
+def sim(audio_signal, sampling_frequency):
     """
     Compute REPET-SIM.
 
@@ -445,10 +457,12 @@ def sim(audio_signal, sample_rate):
     # Number of samples and channels
     number_samples, number_channels = np.shape(audio_signal)
 
-    # Window length, window function, and step length for the STFT
-    window_length = windowlength(sample_rate)
-    window_function = windowfunction(window_length)
-    step_length = steplength(window_length)
+    # Set the parameters for the STFT
+    # (audio stationary around 40 ms, power of 2 for fast FFT and constant overlap-add (COLA),
+    # periodic Hamming window for COLA, and step equal half the window length for COLA)
+    window_length = pow(2, int(np.ceil(np.log2(0.04 * sampling_frequency))))
+    window_function = scipy.signal.hamming(window_length, sym=False)
+    step_length = int(window_length / 2)
 
     # Number of time frames
     number_times = int(
@@ -473,7 +487,9 @@ def sim(audio_signal, sample_rate):
     similarity_matrix = _selfsimilaritymatrix(np.mean(audio_spectrogram, axis=2))
 
     # Similarity distance in time frames
-    similarity_distance2 = int(round(similarity_distance * sample_rate / step_length))
+    similarity_distance2 = int(
+        round(similarity_distance * sampling_frequency / step_length)
+    )
 
     # Similarity indices for all the frames
     similarity_indices = _indices(
@@ -482,7 +498,7 @@ def sim(audio_signal, sample_rate):
 
     # Cutoff frequency in frequency channels for the dual high-pass filter of the foreground
     cutoff_frequency2 = (
-        int(np.ceil(cutoff_frequency * (window_length - 1) / sample_rate)) - 1
+        int(np.ceil(cutoff_frequency * (window_length - 1) / sampling_frequency)) - 1
     )
 
     # Initialize the background signal
@@ -515,7 +531,7 @@ def sim(audio_signal, sample_rate):
     return background_signal
 
 
-def simonline(audio_signal, sample_rate):
+def simonline(audio_signal, sampling_frequency):
     """
     Compute the online REPET-SIM.
         REPET-SIM can be easily implemented online to handle real-time computing, particularly for real-time speech
@@ -534,17 +550,19 @@ def simonline(audio_signal, sample_rate):
     # Number of samples and channels
     number_samples, number_channels = np.shape(audio_signal)
 
-    # Window length, window function, and step length for the STFT
-    window_length = windowlength(sample_rate)
-    window_function = windowfunction(window_length)
-    step_length = steplength(window_length)
+    # Set the parameters for the STFT
+    # (audio stationary around 40 ms, power of 2 for fast FFT and constant overlap-add (COLA),
+    # periodic Hamming window for COLA, and step equal half the window length for COLA)
+    window_length = pow(2, int(np.ceil(np.log2(0.04 * sampling_frequency))))
+    window_function = scipy.signal.hamming(window_length, sym=False)
+    step_length = int(window_length / 2)
 
     # Number of time frames
     number_times = int(np.ceil((number_samples - window_length) / step_length + 1))
 
     # Buffer length in time frames
     buffer_length2 = int(
-        round((buffer_length * sample_rate - window_length) / step_length + 1)
+        round((buffer_length * sampling_frequency - window_length) / step_length + 1)
     )
 
     # Initialize the buffer spectrogram
@@ -874,63 +892,80 @@ def _stft(audio_signal, window_function, step_length):
 
 
 def _istft(audio_stft, window_function, step_length):
-    """Inverse short-time Fourier transform (STFT)"""
+    """
+    Compute the inverse short-time Fourier transform (STFT).
 
-    # Window length and number of time frames
+    Inputs:
+        audio_stft: audio STFT (window_length, number_frames)
+        window_function: window function (window_length,)
+        step_length: step length in samples
+    Output:
+        audio_signal: audio signal (number_samples,)
+    """
+
+    # Get the window length in samples and the number of time frames
     window_length, number_times = np.shape(audio_stft)
 
-    # Number of samples for the signal
-    number_samples = (number_times - 1) * step_length + window_length
+    # Compute the number of samples for the signal
+    number_samples = number_times * step_length + (window_length - step_length)
 
     # Initialize the signal
     audio_signal = np.zeros(number_samples)
 
-    # Inverse Fourier transform of the frames and real part to ensure real values
+    # Compute the inverse Fourier transform of the frames and take the real part to ensure real values
     audio_stft = np.real(np.fft.ifft(audio_stft, axis=0))
 
     # Loop over the time frames
-    for time_index in range(0, number_times):
+    i = 0
+    for j in range(number_times):
 
-        # Constant overlap-add (if proper window and step)
-        sample_index = step_length * time_index
-        audio_signal[sample_index : window_length + sample_index] = (
-            audio_signal[sample_index : window_length + sample_index]
-            + audio_stft[:, time_index]
+        # Perform a constant overlap-add (COLA) of the signal (with proper window function and step length)
+        audio_signal[i : i + window_length] = (
+            audio_signal[i : i + window_length] + audio_stft[:, j]
         )
+        i = i + step_length
 
-    # Remove the zero-padding at the start and end
+    # Remove the zero-padding at the start and at the end of the signal
     audio_signal = audio_signal[
         window_length - step_length : number_samples - (window_length - step_length)
     ]
 
-    # Un-apply window (just in case)
+    # Normalize the signal by the gain introduced by the COLA (if any)
     audio_signal = audio_signal / sum(window_function[0:window_length:step_length])
 
     return audio_signal
 
 
 def _acorr(data_matrix):
-    """Autocorrelation using the Wiener–Khinchin theorem"""
+    """
+    Compute the autocorrelation of the columns in a matrix using the Wiener–Khinchin theorem.
 
-    # Number of points in each column
+    Input:
+        data_matrix: data matrix (number_points, number_columns)
+    Output:
+        autocorrelation_matrix: autocorrelation matrix (number_lags, number_columns)
+    """
+
+    # Get the number of points in each column
     number_points = data_matrix.shape[0]
 
-    # Power Spectral Density (PSD): PSD(X) = np.multiply(fft(X), conj(fft(X))) (after zero-padding for proper
-    # autocorrelation)
+    # Compute the power spectral density (PSD) of the columns
+    # (with zero-padding for proper autocorrelation)
     data_matrix = np.power(
         np.abs(np.fft.fft(data_matrix, n=2 * number_points, axis=0)), 2
     )
 
-    # Wiener–Khinchin theorem: PSD(X) = np.fft.fft(repet._acorr(X))
+    # Compute the autocorrelation using the Wiener–Khinchin theorem
+    # (the PSD equals the Fourier transform of the autocorrelation)
     autocorrelation_matrix = np.real(np.fft.ifft(data_matrix, axis=0))
 
     # Discard the symmetric part
     autocorrelation_matrix = autocorrelation_matrix[0:number_points, :]
 
-    # Unbiased autocorrelation (lag 0 to number_points-1)
-    autocorrelation_matrix = (
-        autocorrelation_matrix.T / np.arange(number_points, 0, -1)
-    ).T
+    # Derive the unbiased autocorrelation
+    autocorrelation_matrix = np.divide(
+        autocorrelation_matrix, np.arange(number_points, 0, -1)[:, np.newaxis]
+    )
 
     return autocorrelation_matrix
 
