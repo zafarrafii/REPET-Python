@@ -414,7 +414,7 @@ plt.ylabel('Frequency (kHz)')
 plt.show()
 ```
 
-<img src="images/repet_python/repet_simonline.png" width="1000">
+<img src="images/repet_simonline.png" width="1000">
 
 
 ## audio_file.wav
