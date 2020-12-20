@@ -106,7 +106,7 @@ plt.ylabel('Frequency (kHz)')
 plt.show()
 ```
 
-<img src="images/repet_python/repet_original.png" width="1000">
+<img src="images/repet_original.png" width="1000">
 
 
 ### extended
