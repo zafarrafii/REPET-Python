@@ -31,35 +31,36 @@ Author:
     http://zafarrafii.com
     https://github.com/zafarrafii
     https://www.linkedin.com/in/zafarrafii/
-    12/17/20
+    12/21/20
 """
 
 import numpy as np
 import scipy.signal
+import scipy.io.wavfile
 import matplotlib.pyplot as plt
 
 
 # Public variables
-# Cutoff frequency in Hz for the dual high-pass filter of the foreground (vocals are rarely below 100 Hz)
+# Define the cutoff frequency in Hz for the dual high-pass filter of the foreground (vocals are rarely below 100 Hz)
 cutoff_frequency = 100
 
-# Period range in seconds for the beat spectrum (for REPET, REPET extented, and adaptive REPET)
+# Define the period range in seconds for the beat spectrum (for REPET, REPET extented, and adaptive REPET)
 period_range = np.array([1, 10])
 
-# Segment length and step in seconds (for REPET extented and adaptive REPET)
+# Define the segment length and step in seconds (for REPET extented and adaptive REPET)
 segment_length = 10
 segment_step = 5
 
-# Filter order for the median filter (for adaptive REPET)
+# Define the filter order for the median filter (for adaptive REPET)
 filter_order = 5
 
-# Minimal threshold for two similar frames in [0,1], minimal distance between two similar frames in seconds, and maximal
-# number of similar frames for one frame (for REPET-SIM and online REPET-SIM)
+# Define the minimal threshold for two similar frames in [0,1], minimal distance between two similar frames in seconds,
+# and maximal number of similar frames for every frame (for REPET-SIM and online REPET-SIM)
 similarity_threshold = 0
 similarity_distance = 1
 similarity_number = 100
 
-# Buffer length in seconds (for online REPET-SIM)
+# Define the buffer length in seconds (for online REPET-SIM)
 buffer_length = 10
 
 
@@ -84,12 +85,12 @@ def original(audio_signal, sampling_frequency):
 
     # Set the parameters for the STFT
     # (audio stationary around 40 ms, power of 2 for fast FFT and constant overlap-add (COLA),
-    # periodic Hamming window for COLA, and step equal half the window length for COLA)
+    # periodic Hamming window for COLA, and step equal to half the window length for COLA)
     window_length = pow(2, int(np.ceil(np.log2(0.04 * sampling_frequency))))
     window_function = scipy.signal.hamming(window_length, sym=False)
     step_length = int(window_length / 2)
 
-    # Derive the number of time frames (given the zero-padding at the start and at the end of the signal)
+    # Derive the number of time frames (given the zero-padding at the start and the end of the signal)
     number_times = (
         int(
             np.ceil(
@@ -104,7 +105,7 @@ def original(audio_signal, sampling_frequency):
     )
 
     # Initialize the STFT
-    audio_stft = np.zeros((window_length, number_times, number_channels))
+    audio_stft = np.zeros((window_length, number_times, number_channels), dtype=complex)
 
     # Loop over the channels
     for i in range(0, number_channels):
@@ -119,43 +120,45 @@ def original(audio_signal, sampling_frequency):
     # (take the square to emphasize peaks of periodicitiy)
     beat_spectrum = _beatspectrum(np.power(np.mean(audio_spectrogram, axis=2), 2))
 
-    # Period range in time frames for the beat spectrum
+    # Convert the period range into time frames for the beat spectrum
     period_range2 = np.round(period_range * sampling_frequency / step_length).astype(
         int
     )
 
-    # Repeating period in time frames given the period range
+    # Derive the repeating period in time frames given the period range
     repeating_period = _periods(beat_spectrum, period_range2)
 
-    # Cutoff frequency in frequency channels for the dual high-pass filter of the foreground
-    cutoff_frequency2 = (
-        int(np.ceil(cutoff_frequency * (window_length - 1) / sampling_frequency)) - 1
+    # Convert the cutoff frequency into frequency channels for the dual high-pass filter of the foreground
+    cutoff_frequency2 = int(
+        np.ceil(cutoff_frequency * window_length / sampling_frequency)
     )
 
     # Initialize the background signal
     background_signal = np.zeros((number_samples, number_channels))
 
     # Loop over the channels
-    for channel_index in range(0, number_channels):
+    for i in range(number_channels):
 
-        # Repeating mask for the current channel
-        repeating_mask = _mask(audio_spectrogram[:, :, channel_index], repeating_period)
+        # Compute the repeating mask for the current channel given the repeating period
+        repeating_mask = _mask(audio_spectrogram[:, :, i], repeating_period)
 
-        # High-pass filtering of the dual foreground
+        # Do a high-pass filtering of the dual foreground
         repeating_mask[1 : cutoff_frequency2 + 2, :] = 1
 
-        # Mirror the frequency channels
-        repeating_mask = np.concatenate((repeating_mask, repeating_mask[-2:0:-1, :]))
+        # Recover the mirrored frequencies
+        repeating_mask = np.concatenate(
+            (repeating_mask, repeating_mask[-2:0:-1, :]), axis=0
+        )
 
-        # Estimated repeating background for the current channel
+        # Synthesize the repeating background for the current channel
         background_signal1 = _istft(
-            repeating_mask * audio_stft[:, :, channel_index],
+            repeating_mask * audio_stft[:, :, i],
             window_function,
             step_length,
         )
 
         # Truncate to the original number of samples
-        background_signal[:, channel_index] = background_signal1[0:number_samples]
+        background_signal[:, i] = background_signal1[0:number_samples]
 
     return background_signal
 
@@ -971,12 +974,19 @@ def _acorr(data_matrix):
 
 
 def _beatspectrum(audio_spectrogram):
-    """Beat spectrum using the autocorrelation"""
+    """
+    Compute the beat spectrum using autocorrelation.
 
-    # Autocorrelation of the frequency channels
+    Input:
+        audio_spectrogram: audio spectrogram (number_frequencies, number_times)
+    Output:
+        beat_spectrum: beat spectrum (number_lags,)
+    """
+
+    # Compute the autocorrelation over times for every frequency channel
     beat_spectrum = _acorr(audio_spectrogram.T)
 
-    # Mean over the frequency channels
+    # Take the mean over the frequency channels
     beat_spectrum = np.mean(beat_spectrum, axis=1)
 
     return beat_spectrum
@@ -1046,28 +1056,37 @@ def _similaritymatrix(data_matrix1, data_matrix2):
     return similarity_matrix
 
 
-def _periods(beat_spectra, period_range):
-    """Repeating periods from the beat spectra (spectrum or spectrogram)"""
+def _periods(beat_spectrogram, period_range):
+    """
+    Compute the repeating period(s) from the beat spectrogram(spectrum) given a period range.
 
-    # The repeating periods are the indices of the maxima in the beat spectra for the period range (they do not account
-    # for lag 0 and should be shorter than a third of the length as at least three segments are needed for the median)
-    if beat_spectra.ndim == 1:
+    Input:
+        beat_spectrogram: beat spectrogram (or spectrum) (number_frequencies, number_lags) (or (number_lags, ))
+    Output:
+        repeating_periods: repeating period(s) in lags (number_periods,) (or scalar)
+    """
+
+    # If beat spectrum, compute the repeating period as its argmax given the period range
+    # (should be less than a third of the length to have at least 3 segments for the median filter)
+    if beat_spectrogram.ndim == 1:
         repeating_periods = (
             np.argmax(
-                beat_spectra[
+                beat_spectrogram[
                     period_range[0] : min(
-                        period_range[1], int(np.floor(beat_spectra.shape[0] / 3))
+                        period_range[1], int(np.floor(beat_spectrogram.shape[0] / 3))
                     )
                 ]
             )
             + 1
         )
+
+    # Else, compute the repeating periods as the argmax of the frequency channels given the period range
     else:
         repeating_periods = (
             np.argmax(
-                beat_spectra[
+                beat_spectrogram[
                     period_range[0] : min(
-                        period_range[1], int(np.floor(beat_spectra.shape[0] / 3))
+                        period_range[1], int(np.floor(beat_spectrogram.shape[0] / 3))
                     ),
                     :,
                 ],
@@ -1076,7 +1095,7 @@ def _periods(beat_spectra, period_range):
             + 1
         )
 
-    # Re-adjust the index or indices
+    # Re-adjust the indices
     repeating_periods = repeating_periods + period_range[0]
 
     return repeating_periods
@@ -1152,28 +1171,37 @@ def _indices(
 
 
 def _mask(audio_spectrogram, repeating_period):
-    """Repeating mask for REPET"""
+    """
+    Compute the repeating mask for REPET
 
-    # Number of frequency channels and time frames
+    Input:
+        audio_spectrogram: audio spectrogram (number_frequencies, number_times)
+    Output:
+        repeating_period: repeating period in lag
+    """
+
+    # Get the number of frequency channels and time frames in the spectrogram
     number_frequencies, number_times = np.shape(audio_spectrogram)
 
-    # Number of repeating segments, including the last partial one
+    # Estimate the number of segments (including the last partial one)
     number_segments = int(np.ceil(number_times / repeating_period))
 
-    # Pad the audio spectrogram to have an integer number of segments and reshape it to a tensor
+    # Zero-pad the end of the spectrogram to have a full last segment
     audio_spectrogram = np.pad(
         audio_spectrogram,
         ((0, 0), (0, number_segments * repeating_period - number_times)),
         "constant",
-        constant_values=np.inf,
+        constant_values=0,
     )
+
+    # Reshape the zero-padded spectrogram to a tensor of size (number_frequencies, number_times, number_segments)
     audio_spectrogram = np.reshape(
         audio_spectrogram,
         (number_frequencies, repeating_period, number_segments),
         order="F",
     )
 
-    # Derive the repeating segment by taking the median over the segments, ignoring the nan parts
+    # Compute the repeating segment by taking the median over the segments, not accounting for the last zeros
     repeating_segment = np.concatenate(
         (
             np.median(
@@ -1195,17 +1223,17 @@ def _mask(audio_spectrogram, repeating_period):
         1,
     )
 
-    # Derive the repeating spectrogram by making sure it has less energy than the audio spectrogram
+    # Derive the repeating spectrogram by ensuring it has less energy than the original spectrogram
     repeating_spectrogram = np.minimum(
         audio_spectrogram, repeating_segment[:, :, np.newaxis]
     )
 
-    # Derive the repeating mask by normalizing the repeating spectrogram by the audio spectrogram
+    # Derive the repeating mask by normalizing the repeating spectrogram by the original spectrogram
     repeating_mask = (repeating_spectrogram + np.finfo(float).eps) / (
         audio_spectrogram + np.finfo(float).eps
     )
 
-    # Reshape the repeating mask and truncate to the original number of time frames
+    # Reshape the repeating mask into (number_frequencies, number_times) and truncate to the original number of time frames
     repeating_mask = np.reshape(
         repeating_mask,
         (number_frequencies, number_segments * repeating_period),
