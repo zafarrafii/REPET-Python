@@ -36,6 +36,8 @@ Other:
 
 Compute the original REPET.
 
+<img src="images/repet_original_overview.png" width="1000">
+
 The original REPET aims at identifying and extracting the repeating patterns in an audio mixture, by estimating a period of the underlying repeating structure and modeling a segment of the periodically repeating background.
 
 ```
@@ -166,6 +168,8 @@ plt.show()
 
 Compute the adaptive REPET.
 
+<img src="images/repet_adaptive_overview.png" width="1000">
+
 ```
 background_signal = repet.adaptive(audio_signal, sampling_frequency)
     
@@ -229,6 +233,8 @@ plt.show()
 ### sim
 
 Compute REPET-SIM.
+
+<img src="images/repet_sim_overview.png" width="1000">
 
 ```
 background_signal = repet.sim(audio_signal, sampling_frequency)
