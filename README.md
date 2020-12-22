@@ -28,7 +28,6 @@ Functions:
 Other:
 - `wavread` - Read a WAVE file (using SciPy).
 - `wavwrite` - Write a WAVE file (using SciPy).
-- `sigplot` - Plot a signal in seconds.
 - `specshow` - Display a spectrogram in dB, seconds, and Hz.
 
 ### original
