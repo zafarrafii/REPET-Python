@@ -47,61 +47,47 @@ Output:
 #### Example: Estimate the background and foreground signals, and display their spectrograms.
 
 ```
-# Import modules
-import scipy.io.wavfile
-import repet
+# Import the modules
 import numpy as np
+import scipy.signal
+import repet
 import matplotlib.pyplot as plt
 
-# Audio signal (normalized) and sample rate in Hz
-sample_rate, audio_signal = scipy.io.wavfile.read('audio_file.wav')
-audio_signal = audio_signal / (2.0**(audio_signal.itemsize*8-1))
+# Read the audio signal (normalized) with its sampling frequency in Hz
+audio_signal, sampling_frequency = repet.wavread("audio_file.wav")
 
-# Estimate the background signal and infer the foreground signal
-background_signal = repet.original(audio_signal, sample_rate);
-foreground_signal = audio_signal-background_signal;
+# Estimate the background signal, and the foreground signal
+background_signal = repet.original(audio_signal, sampling_frequency)
+foreground_signal = audio_signal-background_signal
 
-# Write the background and foreground signals (un-normalized)
-scipy.io.wavfile.write('background_signal.wav', sample_rate, background_signal)
-scipy.io.wavfile.write('foreground_signal.wav', sample_rate, foreground_signal)
+# Write the background and foreground signals
+repet.wavwrite(background_signal, sampling_frequency, "background_signal.wav")
+repet.wavwrite(foreground_signal, sampling_frequency, "foreground_signal.wav")
 
-# Compute the audio, background, and foreground spectrograms
-window_length = repet.windowlength(sample_rate)
-window_function = repet.windowfunction(window_length)
-step_length = repet.steplength(window_length)
-audio_spectrogram = abs(repet._stft(np.mean(audio_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
-background_spectrogram = abs(repet._stft(np.mean(background_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
-foreground_spectrogram = abs(repet._stft(np.mean(foreground_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
+# Compute the mixture, background, and foreground spectrograms
+window_length = pow(2, int(np.ceil(np.log2(0.04*sampling_frequency))))
+window_function = scipy.signal.hamming(window_length, sym=False)
+step_length = int(window_length/2)
+number_frequencies = int(window_length/2)+1
+audio_spectrogram = abs(repet._stft(np.mean(audio_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
+background_spectrogram = abs(repet._stft(np.mean(background_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
+foreground_spectrogram = abs(repet._stft(np.mean(foreground_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
 
-# Display the audio, background, and foreground spectrograms (up to 5kHz)
-plt.rc('font', size=30)
-plt.subplot(3, 1, 1)
-plt.imshow(20*np.log10(audio_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Audio Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-           np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-           np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
-plt.subplot(3, 1, 2)
-plt.imshow(20*np.log10(background_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Background Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-           np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-           np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
-plt.subplot(3, 1, 3)
-plt.imshow(20*np.log10(foreground_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Foreground Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-           np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-           np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
+# Display the mixture, background, and foreground spectrograms in dB, seconds, and Hz
+time_duration = len(audio_signal)/sampling_frequency
+maximum_frequency = sampling_frequency/8
+xtick_step = 1
+ytick_step = 1000
+plt.figure(figsize=(17, 10))
+plt.subplot(3,1,1)
+repet.specshow(audio_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Audio spectrogram (dB)")
+plt.subplot(3,1,2)
+repet.specshow(background_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Background spectrogram (dB)")
+plt.subplot(3,1,3)
+repet.specshow(foreground_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Foreground spectrogram (dB)")
 plt.show()
 ```
 
@@ -125,64 +111,51 @@ Output:
 #### Example: Estimate the background and foreground signals, and display their spectrograms.
 
 ```
-import scipy.io.wavfile
-import repet
+# Import the modules
 import numpy as np
+import scipy.signal
+import repet
 import matplotlib.pyplot as plt
 
-# Audio signal (normalized) and sample rate in Hz
-sample_rate, audio_signal = scipy.io.wavfile.read('audio_file.wav')
-audio_signal = audio_signal / (2.0**(audio_signal.itemsize*8-1))
+# Read the audio signal (normalized) with its sampling frequency in Hz
+audio_signal, sampling_frequency = repet.wavread("audio_file.wav")
 
-# Estimate the background signal and infer the foreground signal
-background_signal = repet.extended(audio_signal, sample_rate);
-foreground_signal = audio_signal-background_signal;
+# Estimate the background signal, and the foreground signal
+background_signal = repet.extended(audio_signal, sampling_frequency)
+foreground_signal = audio_signal-background_signal
 
-# Write the background and foreground signals (un-normalized)
-scipy.io.wavfile.write('background_signal.wav', sample_rate, background_signal)
-scipy.io.wavfile.write('foreground_signal.wav', sample_rate, foreground_signal)
+# Write the background and foreground signals
+repet.wavwrite(background_signal, sampling_frequency, "background_signal.wav")
+repet.wavwrite(foreground_signal, sampling_frequency, "foreground_signal.wav")
 
-# Compute the audio, background, and foreground spectrograms
-window_length = repet.windowlength(sample_rate)
-window_function = repet.windowfunction(window_length)
-step_length = repet.steplength(window_length)
-audio_spectrogram = abs(repet._stft(np.mean(audio_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
-background_spectrogram = abs(repet._stft(np.mean(background_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
-foreground_spectrogram = abs(repet._stft(np.mean(foreground_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
+# Compute the mixture, background, and foreground spectrograms
+window_length = pow(2, int(np.ceil(np.log2(0.04*sampling_frequency))))
+window_function = scipy.signal.hamming(window_length, sym=False)
+step_length = int(window_length/2)
+number_frequencies = int(window_length/2)+1
+audio_spectrogram = abs(repet._stft(np.mean(audio_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
+background_spectrogram = abs(repet._stft(np.mean(background_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
+foreground_spectrogram = abs(repet._stft(np.mean(foreground_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
 
-# Display the audio, background, and foreground spectrograms (up to 5kHz)
-plt.rc('font', size=30)
-plt.subplot(3, 1, 1)
-plt.imshow(20*np.log10(audio_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Audio Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-        np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-        np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
-plt.subplot(3, 1, 2)
-plt.imshow(20*np.log10(background_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Background Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-        np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-        np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
-plt.subplot(3, 1, 3)
-plt.imshow(20*np.log10(foreground_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Foreground Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-        np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-        np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
+# Display the mixture, background, and foreground spectrograms in dB, seconds, and Hz
+time_duration = len(audio_signal)/sampling_frequency
+maximum_frequency = sampling_frequency/8
+xtick_step = 1
+ytick_step = 1000
+plt.figure(figsize=(17, 10))
+plt.subplot(3,1,1)
+repet.specshow(audio_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Audio spectrogram (dB)")
+plt.subplot(3,1,2)
+repet.specshow(background_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Background spectrogram (dB)")
+plt.subplot(3,1,3)
+repet.specshow(foreground_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Foreground spectrogram (dB)")
 plt.show()
 ```
 
-<img src="images/repet_python/repet_extended.png" width="1000">
+<img src="images/repet_extended.png" width="1000">
 
 
 ### adaptive
@@ -202,60 +175,47 @@ Output:
 #### Example: Estimate the background and foreground signals, and display their spectrograms.
 
 ```
-import scipy.io.wavfile
-import repet
+# Import the modules
 import numpy as np
+import scipy.signal
+import repet
 import matplotlib.pyplot as plt
 
-# Audio signal (normalized) and sample rate in Hz
-sample_rate, audio_signal = scipy.io.wavfile.read('audio_file.wav')
-audio_signal = audio_signal / (2.0**(audio_signal.itemsize*8-1))
+# Read the audio signal (normalized) with its sampling frequency in Hz
+audio_signal, sampling_frequency = repet.wavread("audio_file.wav")
 
-# Estimate the background signal and infer the foreground signal
-background_signal = repet.adaptive(audio_signal, sample_rate);
-foreground_signal = audio_signal-background_signal;
+# Estimate the background signal, and the foreground signal
+background_signal = repet.adaptive(audio_signal, sampling_frequency)
+foreground_signal = audio_signal-background_signal
 
-# Write the background and foreground signals (un-normalized)
-scipy.io.wavfile.write('background_signal.wav', sample_rate, background_signal)
-scipy.io.wavfile.write('foreground_signal.wav', sample_rate, foreground_signal)
+# Write the background and foreground signals
+repet.wavwrite(background_signal, sampling_frequency, "background_signal.wav")
+repet.wavwrite(foreground_signal, sampling_frequency, "foreground_signal.wav")
 
-# Compute the audio, background, and foreground spectrograms
-window_length = repet.windowlength(sample_rate)
-window_function = repet.windowfunction(window_length)
-step_length = repet.steplength(window_length)
-audio_spectrogram = abs(repet._stft(np.mean(audio_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
-background_spectrogram = abs(repet._stft(np.mean(background_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
-foreground_spectrogram = abs(repet._stft(np.mean(foreground_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
+# Compute the mixture, background, and foreground spectrograms
+window_length = pow(2, int(np.ceil(np.log2(0.04*sampling_frequency))))
+window_function = scipy.signal.hamming(window_length, sym=False)
+step_length = int(window_length/2)
+number_frequencies = int(window_length/2)+1
+audio_spectrogram = abs(repet._stft(np.mean(audio_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
+background_spectrogram = abs(repet._stft(np.mean(background_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
+foreground_spectrogram = abs(repet._stft(np.mean(foreground_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
 
-# Display the audio, background, and foreground spectrograms (up to 5kHz)
-plt.rc('font', size=30)
-plt.subplot(3, 1, 1)
-plt.imshow(20*np.log10(audio_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Audio Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-        np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-        np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
-plt.subplot(3, 1, 2)
-plt.imshow(20*np.log10(background_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Background Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-        np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-        np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
-plt.subplot(3, 1, 3)
-plt.imshow(20*np.log10(foreground_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Foreground Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-        np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-        np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
+# Display the mixture, background, and foreground spectrograms in dB, seconds, and Hz
+time_duration = len(audio_signal)/sampling_frequency
+maximum_frequency = sampling_frequency/8
+xtick_step = 1
+ytick_step = 1000
+plt.figure(figsize=(17, 10))
+plt.subplot(3,1,1)
+repet.specshow(audio_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Audio spectrogram (dB)")
+plt.subplot(3,1,2)
+repet.specshow(background_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Background spectrogram (dB)")
+plt.subplot(3,1,3)
+repet.specshow(foreground_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Foreground spectrogram (dB)")
 plt.show()
 ```
 
@@ -279,64 +239,51 @@ Output:
 #### Example: Estimate the background and foreground signals, and display their spectrograms.
 
 ```
-import scipy.io.wavfile
-import repet
+# Import the modules
 import numpy as np
+import scipy.signal
+import repet
 import matplotlib.pyplot as plt
 
-# Audio signal (normalized) and sample rate in Hz
-sample_rate, audio_signal = scipy.io.wavfile.read('audio_file.wav')
-audio_signal = audio_signal / (2.0**(audio_signal.itemsize*8-1))
+# Read the audio signal (normalized) with its sampling frequency in Hz
+audio_signal, sampling_frequency = repet.wavread("audio_file.wav")
 
-# Estimate the background signal and infer the foreground signal
-background_signal = repet.sim(audio_signal, sample_rate);
-foreground_signal = audio_signal-background_signal;
+# Estimate the background signal, and the foreground signal
+background_signal = repet.sim(audio_signal, sampling_frequency)
+foreground_signal = audio_signal-background_signal
 
-# Write the background and foreground signals (un-normalized)
-scipy.io.wavfile.write('background_signal.wav', sample_rate, background_signal)
-scipy.io.wavfile.write('foreground_signal.wav', sample_rate, foreground_signal)
+# Write the background and foreground signals
+repet.wavwrite(background_signal, sampling_frequency, "background_signal.wav")
+repet.wavwrite(foreground_signal, sampling_frequency, "foreground_signal.wav")
 
-# Compute the audio, background, and foreground spectrograms
-window_length = repet.windowlength(sample_rate)
-window_function = repet.windowfunction(window_length)
-step_length = repet.steplength(window_length)
-audio_spectrogram = abs(repet._stft(np.mean(audio_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
-background_spectrogram = abs(repet._stft(np.mean(background_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
-foreground_spectrogram = abs(repet._stft(np.mean(foreground_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
+# Compute the mixture, background, and foreground spectrograms
+window_length = pow(2, int(np.ceil(np.log2(0.04*sampling_frequency))))
+window_function = scipy.signal.hamming(window_length, sym=False)
+step_length = int(window_length/2)
+number_frequencies = int(window_length/2)+1
+audio_spectrogram = abs(repet._stft(np.mean(audio_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
+background_spectrogram = abs(repet._stft(np.mean(background_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
+foreground_spectrogram = abs(repet._stft(np.mean(foreground_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
 
-# Display the audio, background, and foreground spectrograms (up to 5kHz)
-plt.rc('font', size=30)
-plt.subplot(3, 1, 1)
-plt.imshow(20*np.log10(audio_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Audio Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-        np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-        np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
-plt.subplot(3, 1, 2)
-plt.imshow(20*np.log10(background_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Background Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-        np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-        np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
-plt.subplot(3, 1, 3)
-plt.imshow(20*np.log10(foreground_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Foreground Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-        np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-        np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
+# Display the mixture, background, and foreground spectrograms in dB, seconds, and Hz
+time_duration = len(audio_signal)/sampling_frequency
+maximum_frequency = sampling_frequency/8
+xtick_step = 1
+ytick_step = 1000
+plt.figure(figsize=(17, 10))
+plt.subplot(3,1,1)
+repet.specshow(audio_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Audio spectrogram (dB)")
+plt.subplot(3,1,2)
+repet.specshow(background_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Background spectrogram (dB)")
+plt.subplot(3,1,3)
+repet.specshow(foreground_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Foreground spectrogram (dB)")
 plt.show()
 ```
 
-<img src="images/repet_python/repet_sim.png" width="1000">
+<img src="images/repet_sim.png" width="1000">
 
 
 ### simonline
@@ -356,60 +303,47 @@ Output:
 #### Example: Estimate the background and foreground signals, and display their spectrograms.
 
 ```
-import scipy.io.wavfile
-import repet
+# Import the modules
 import numpy as np
+import scipy.signal
+import repet
 import matplotlib.pyplot as plt
 
-# Audio signal (normalized) and sample rate in Hz
-sample_rate, audio_signal = scipy.io.wavfile.read('audio_file.wav')
-audio_signal = audio_signal / (2.0**(audio_signal.itemsize*8-1))
+# Read the audio signal (normalized) with its sampling frequency in Hz
+audio_signal, sampling_frequency = repet.wavread("audio_file.wav")
 
-# Estimate the background signal and infer the foreground signal
-background_signal = repet.simonline(audio_signal, sample_rate);
-foreground_signal = audio_signal-background_signal;
+# Estimate the background signal, and the foreground signal
+background_signal = repet.simonline(audio_signal, sampling_frequency)
+foreground_signal = audio_signal-background_signal
 
-# Write the background and foreground signals (un-normalized)
-scipy.io.wavfile.write('background_signal.wav', sample_rate, background_signal)
-scipy.io.wavfile.write('foreground_signal.wav', sample_rate, foreground_signal)
+# Write the background and foreground signals
+repet.wavwrite(background_signal, sampling_frequency, "background_signal.wav")
+repet.wavwrite(foreground_signal, sampling_frequency, "foreground_signal.wav")
 
-# Compute the audio, background, and foreground spectrograms
-window_length = repet.windowlength(sample_rate)
-window_function = repet.windowfunction(window_length)
-step_length = repet.steplength(window_length)
-audio_spectrogram = abs(repet._stft(np.mean(audio_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
-background_spectrogram = abs(repet._stft(np.mean(background_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
-foreground_spectrogram = abs(repet._stft(np.mean(foreground_signal, axis=1), window_function, step_length)[0:int(window_length/2)+1, :])
+# Compute the mixture, background, and foreground spectrograms
+window_length = pow(2, int(np.ceil(np.log2(0.04*sampling_frequency))))
+window_function = scipy.signal.hamming(window_length, sym=False)
+step_length = int(window_length/2)
+number_frequencies = int(window_length/2)+1
+audio_spectrogram = abs(repet._stft(np.mean(audio_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
+background_spectrogram = abs(repet._stft(np.mean(background_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
+foreground_spectrogram = abs(repet._stft(np.mean(foreground_signal, axis=1), window_function, step_length)[0:number_frequencies, :])
 
-# Display the audio, background, and foreground spectrograms (up to 5kHz)
-plt.rc('font', size=30)
-plt.subplot(3, 1, 1)
-plt.imshow(20*np.log10(audio_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Audio Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-        np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-        np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
-plt.subplot(3, 1, 2)
-plt.imshow(20*np.log10(background_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Background Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-        np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-        np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
-plt.subplot(3, 1, 3)
-plt.imshow(20*np.log10(foreground_spectrogram[1:int(window_length/8), :]), aspect='auto', cmap='jet', origin='lower')
-plt.title('Foreground Spectrogram (dB)')
-plt.xticks(np.round(np.arange(1, np.floor(len(audio_signal)/sample_rate)+1)*sample_rate/step_length),
-        np.arange(1, int(np.floor(len(audio_signal)/sample_rate))+1))
-plt.xlabel('Time (s)')
-plt.yticks(np.round(np.arange(1e3, int(sample_rate/8)+1, 1e3)/sample_rate*window_length),
-        np.arange(1, int(sample_rate/8*1e3)+1))
-plt.ylabel('Frequency (kHz)')
+# Display the mixture, background, and foreground spectrograms in dB, seconds, and Hz
+time_duration = len(audio_signal)/sampling_frequency
+maximum_frequency = sampling_frequency/8
+xtick_step = 1
+ytick_step = 1000
+plt.figure(figsize=(17, 10))
+plt.subplot(3,1,1)
+repet.specshow(audio_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Audio spectrogram (dB)")
+plt.subplot(3,1,2)
+repet.specshow(background_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Background spectrogram (dB)")
+plt.subplot(3,1,3)
+repet.specshow(foreground_spectrogram[0:int(window_length/8), :], time_duration, maximum_frequency, xtick_step, ytick_step)
+plt.title("Foreground spectrogram (dB)")
 plt.show()
 ```
 
