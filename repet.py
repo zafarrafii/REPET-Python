@@ -22,7 +22,6 @@ Functions:
 Other:
     wavread - Read a WAVE file (using SciPy).
     wavwrite - Write a WAVE file (using SciPy).
-    sigplot - Plot a signal in seconds.
     specshow - Display an spectrogram in dB, seconds, and Hz.
 
 Author:
@@ -31,7 +30,7 @@ Author:
     http://zafarrafii.com
     https://github.com/zafarrafii
     https://www.linkedin.com/in/zafarrafii/
-    12/21/20
+    12/22/20
 """
 
 import numpy as np
@@ -741,45 +740,10 @@ def wavwrite(audio_signal, sampling_frequency, audio_file):
     scipy.io.wavfile.write(audio_file, sampling_frequency, audio_signal)
 
 
-def sigplot(
-    audio_signal,
-    sampling_frequency,
-    xtick_step=1,
-):
-    """
-    Plot a signal in seconds.
-
-    Inputs:
-        audio_signal: audio signal (number_samples, number_channels) (number_channels>=0)
-        sampling_frequency: sampling frequency in Hz
-        xtick_step: step for the x-axis ticks in seconds (default: 1 second)
-    """
-
-    # Get the number of samples
-    number_samples = np.shape(audio_signal)[0]
-
-    # Prepare the tick locations and labels for the x-axis
-    xtick_locations = np.arange(
-        xtick_step * sampling_frequency,
-        number_samples,
-        xtick_step * sampling_frequency,
-    )
-    xtick_labels = np.arange(
-        xtick_step, number_samples / sampling_frequency, xtick_step
-    ).astype(int)
-
-    # Plot the signal in seconds
-    plt.plot(audio_signal)
-    plt.xlim(0, number_samples)
-    plt.ylim(-1, 1)
-    plt.xticks(ticks=xtick_locations, labels=xtick_labels)
-    plt.xlabel("Time (s)")
-
-
 def specshow(
     audio_spectrogram,
-    number_samples,
-    sampling_frequency,
+    time_duration,
+    maximum_frequency,
     xtick_step=1,
     ytick_step=1000,
 ):
@@ -788,8 +752,8 @@ def specshow(
 
     Inputs:
         audio_spectrogram: audio spectrogram (without DC and mirrored frequencies) (number_frequencies, number_times)
-        number_samples: number of samples from the original signal
-        sampling_frequency: sampling frequency from the original signal in Hz
+        time_duration: time duration of the spectrogram in seconds
+        maximum_frequency: maximum frequency in the spectrogram in Hz
         xtick_step: step for the x-axis ticks in seconds (default: 1 second)
         ytick_step: step for the y-axis ticks in Hz (default: 1000 Hz)
     """
@@ -797,13 +761,9 @@ def specshow(
     # Get the number of frequency channels and time frames
     number_frequencies, number_times = np.shape(audio_spectrogram)
 
-    # Derive the number of Hertz and seconds
-    number_hertz = sampling_frequency / 2
-    number_seconds = number_samples / sampling_frequency
-
     # Derive the number of time frames per second and the number of frequency channels per Hz
-    time_resolution = number_times / number_seconds
-    frequency_resolution = number_frequencies / number_hertz
+    time_resolution = number_times / time_duration
+    frequency_resolution = number_frequencies / maximum_frequency
 
     # Prepare the tick locations and labels for the x-axis
     xtick_locations = np.arange(
@@ -811,7 +771,7 @@ def specshow(
         number_times,
         xtick_step * time_resolution,
     )
-    xtick_labels = np.arange(xtick_step, number_seconds, xtick_step).astype(int)
+    xtick_labels = np.arange(xtick_step, time_duration, xtick_step).astype(int)
 
     # Prepare the tick locations and labels for the y-axis
     ytick_locations = np.arange(
@@ -819,7 +779,7 @@ def specshow(
         number_frequencies,
         ytick_step * frequency_resolution,
     )
-    ytick_labels = np.arange(ytick_step, number_hertz, ytick_step).astype(int)
+    ytick_labels = np.arange(ytick_step, maximum_frequency, ytick_step).astype(int)
 
     # Display the spectrogram in dB, seconds, and Hz
     plt.imshow(
