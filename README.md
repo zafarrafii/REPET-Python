@@ -2,7 +2,7 @@
 
 REPeating Pattern Extraction Technique (REPET) in **Python** for audio source separation.
 
-<img src="/images/repet.png" width="1000">
+<img src="./images/repet.png" width="1000">
 
 ![lala](https://raw.githubusercontent.com/zafarrafii/REPET-Python/master/images/repet.png)
 
