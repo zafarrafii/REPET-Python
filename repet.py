@@ -30,7 +30,7 @@ Author:
     http://zafarrafii.com
     https://github.com/zafarrafii
     https://www.linkedin.com/in/zafarrafii/
-    12/22/20
+    12/23/20
 """
 
 import numpy as np
@@ -207,7 +207,6 @@ def original(audio_signal, sampling_frequency):
 def extended(audio_signal, sampling_frequency):
     """
     Compute REPET extended.
-
         The original REPET can be easily extended to handle varying repeating structures, by simply applying the method
         along time, on individual segments or via a sliding window.
 
@@ -425,7 +424,6 @@ def extended(audio_signal, sampling_frequency):
 def adaptive(audio_signal, sampling_frequency):
     """
     Compute the adaptive REPET.
-
         The original REPET works well when the repeating background is relatively stable (e.g., a verse or the chorus in
         a song); however, the repeating background can also vary over time (e.g., a verse followed by the chorus in the
         song). The adaptive REPET is an extension of the original REPET that can handle varying repeating structures, by
@@ -567,7 +565,6 @@ def adaptive(audio_signal, sampling_frequency):
 def sim(audio_signal, sampling_frequency):
     """
     Compute REPET-SIM.
-
         The REPET methods work well when the repeating background has periodically repeating patterns (e.g., jackhammer
         noise); however, the repeating patterns can also happen intermittently or without a global or local periodicity
         (e.g., frogs by a pond). REPET-SIM is a generalization of REPET that can also handle non-periodically repeating
