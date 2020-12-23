@@ -36,7 +36,7 @@ Other:
 
 Compute the original REPET.
 
-<img src="images/repet_original_overview.png" width="700">
+<img src="images/repet_original_overview.png" width="600">
 
 The original REPET aims at identifying and extracting the repeating patterns in an audio mixture, by estimating a period of the underlying repeating structure and modeling a segment of the periodically repeating background.
 
