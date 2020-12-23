@@ -104,8 +104,7 @@ plt.show()
 
 Compute REPET extended.
 
-The original REPET can be easily extended to handle varying repeating structures, by simply applying the method
-along time, on individual segments or via a sliding window.
+The original REPET can be easily extended to handle varying repeating structures, by simply applying the method along time, on individual segments or via a sliding window.
 
 ```
 background_signal = repet.extended(audio_signal, sampling_frequency)
@@ -173,11 +172,7 @@ Compute the adaptive REPET.
 
 <img src="images/repet_adaptive_overview.png" width="600">
 
-The original REPET works well when the repeating background is relatively stable (e.g., a verse or the chorus in
-a song); however, the repeating background can also vary over time (e.g., a verse followed by the chorus in the
-song). The adaptive REPET is an extension of the original REPET that can handle varying repeating structures, by
-estimating the time-varying repeating periods and extracting the repeating background locally, without the need
-for segmentation or windowing.
+The original REPET works well when the repeating background is relatively stable (e.g., a verse or the chorus in a song); however, the repeating background can also vary over time (e.g., a verse followed by the chorus in the song). The adaptive REPET is an extension of the original REPET that can handle varying repeating structures, by estimating the time-varying repeating periods and extracting the repeating background locally, without the need for segmentation or windowing.
 
 ```
 background_signal = repet.adaptive(audio_signal, sampling_frequency)
@@ -243,7 +238,9 @@ plt.show()
 
 Compute REPET-SIM.
 
-<img src="images/repet_sim_overview.png" width="1000">
+<img src="images/repet_sim_overview.png" width="600">
+
+The REPET methods work well when the repeating background has periodically repeating patterns (e.g., jackhammer noise); however, the repeating patterns can also happen intermittently or without a global or local periodicity (e.g., frogs by a pond). REPET-SIM is a generalization of REPET that can also handle non-periodically repeating structures, by using a similarity matrix to identify the repeating elements.
 
 ```
 background_signal = repet.sim(audio_signal, sampling_frequency)
@@ -308,6 +305,8 @@ plt.show()
 ### simonline
 
 Compute the online REPET-SIM.
+
+REPET-SIM can be easily implemented online to handle real-time computing, particularly for real-time speech enhancement. The online REPET-SIM simply processes the time frames of the mixture one after the other given a buffer that temporally stores past frames.
 
 ```
 background_signal = repet.simonline(audio_signal, sampling_frequency)
