@@ -104,6 +104,9 @@ plt.show()
 
 Compute REPET extended.
 
+The original REPET can be easily extended to handle varying repeating structures, by simply applying the method
+along time, on individual segments or via a sliding window.
+
 ```
 background_signal = repet.extended(audio_signal, sampling_frequency)
     
@@ -168,7 +171,13 @@ plt.show()
 
 Compute the adaptive REPET.
 
-<img src="images/repet_adaptive_overview.png" width="1000">
+<img src="images/repet_adaptive_overview.png" width="600">
+
+The original REPET works well when the repeating background is relatively stable (e.g., a verse or the chorus in
+a song); however, the repeating background can also vary over time (e.g., a verse followed by the chorus in the
+song). The adaptive REPET is an extension of the original REPET that can handle varying repeating structures, by
+estimating the time-varying repeating periods and extracting the repeating background locally, without the need
+for segmentation or windowing.
 
 ```
 background_signal = repet.adaptive(audio_signal, sampling_frequency)
