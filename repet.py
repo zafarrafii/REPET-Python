@@ -30,7 +30,7 @@ Author:
     http://zafarrafii.com
     https://github.com/zafarrafii
     https://www.linkedin.com/in/zafarrafii/
-    12/23/20
+    12/24/20
 """
 
 import numpy as np
@@ -161,7 +161,7 @@ def original(audio_signal, sampling_frequency):
     # (take the square to emphasize peaks of periodicitiy)
     beat_spectrum = _beatspectrum(np.power(np.mean(audio_spectrogram, axis=2), 2))
 
-    # Convert the period range into time frames for the beat spectrum
+    # Get the period range in time frames for the beat spectrum
     period_range2 = np.round(period_range * sampling_frequency / step_length).astype(
         int
     )
@@ -169,7 +169,7 @@ def original(audio_signal, sampling_frequency):
     # Derive the repeating period in time frames given the period range
     repeating_period = _periods(beat_spectrum, period_range2)
 
-    # Convert the cutoff frequency into frequency channels for the dual high-pass filter of the foreground
+    # Get the cutoff frequency in frequency channels for the dual high-pass filter of the foreground
     cutoff_frequency2 = int(
         np.ceil(cutoff_frequency * window_length / sampling_frequency)
     )
@@ -183,7 +183,7 @@ def original(audio_signal, sampling_frequency):
         # Compute the repeating mask for the current channel given the repeating period
         repeating_mask = _mask(audio_spectrogram[:, :, i], repeating_period)
 
-        # Do a high-pass filtering of the dual foreground
+        # Perform a high-pass filtering of the dual foreground
         repeating_mask[1 : cutoff_frequency2 + 2, :] = 1
 
         # Recover the mirrored frequencies
@@ -261,25 +261,28 @@ def extended(audio_signal, sampling_frequency):
         plt.show()
     """
 
-    # Number of samples and channels
+    # Get the number of samples and channels in the audio signal
     number_samples, number_channels = np.shape(audio_signal)
 
-    # Segmentation length, step, and overlap in samples
+    # Get the segment length, step, and overlap in samples
     segment_length2 = round(segment_length * sampling_frequency)
     segment_step2 = round(segment_step * sampling_frequency)
     segment_overlap2 = segment_length2 - segment_step2
 
-    # One segment if the signal is too short
+    # Get the number of segments
     if number_samples < segment_length2 + segment_step2:
+
+        # Use a single segment if the signal is too short
         number_segments = 1
+
     else:
 
-        # Number of segments (the last one could be longer)
+        # Use multiple segments if the signal is long enough (the last segment could be longer)
         number_segments = 1 + int(
             np.floor((number_samples - segment_length2) / segment_step2)
         )
 
-        # Triangular window for the overlapping parts
+        # Use a triangular window for the overlapping parts
         segment_window = scipy.signal.triang(2 * segment_overlap2)
 
     # Set the parameters for the STFT
@@ -289,43 +292,40 @@ def extended(audio_signal, sampling_frequency):
     window_function = scipy.signal.hamming(window_length, sym=False)
     step_length = int(window_length / 2)
 
-    # Period range in time frames for the beat spectrum
+    # Get the period range in time frames for the beat spectrum
     period_range2 = np.round(period_range * sampling_frequency / step_length).astype(
         int
     )
 
-    # Cutoff frequency in frequency channels for the dual high-pass filter of the foreground
-    cutoff_frequency2 = (
-        int(np.ceil(cutoff_frequency * (window_length - 1) / sampling_frequency)) - 1
+    # Get the cutoff frequency in frequency channels for the dual high-pass filter of the foreground
+    cutoff_frequency2 = int(
+        np.ceil(cutoff_frequency * window_length / sampling_frequency)
     )
 
     # Initialize background signal
     background_signal = np.zeros((number_samples, number_channels))
 
     # Loop over the segments
-    for segment_index in range(0, number_segments):
+    k = 0
+    for j in range(number_segments):
 
-        # Case one segment
+        # Check if there is a single segment or multiple ones
         if number_segments == 1:
+
+            # Use the whole signal as the segment
             audio_segment = audio_signal
             segment_length2 = number_samples
+
         else:
 
-            # Sample index for the segment
-            sample_index = segment_index * segment_step2
-
-            # Case first segments (same length)
-            if segment_index < number_segments - 1:
-                audio_segment = audio_signal[
-                    sample_index : sample_index + segment_length2, :
-                ]
-
-            # Case last segment (could be longer)
-            elif segment_index == number_segments - 1:
-                audio_segment = audio_signal[sample_index:number_samples, :]
+            # Check if it is one of the first segments (same length) or the last one (could be longer)
+            if j < number_segments - 1:
+                audio_segment = audio_signal[k : k + segment_length2, :]
+            elif j == number_segments - 1:
+                audio_segment = audio_signal[k:number_samples, :]
                 segment_length2 = len(audio_segment)
 
-        # Number of time frames
+        # Get the number of time frames
         number_times = int(
             np.ceil((window_length - step_length + segment_length2) / step_length)
         )
@@ -336,87 +336,89 @@ def extended(audio_signal, sampling_frequency):
         )
 
         # Loop over the channels
-        for channel_index in range(0, number_channels):
+        for i in range(number_channels):
 
-            # STFT of the current channel
-            audio_stft[:, :, channel_index] = _stft(
-                audio_segment[:, channel_index], window_function, step_length
+            # Compute the STFT for the current channel
+            audio_stft[:, :, i] = _stft(
+                audio_segment[:, i], window_function, step_length
             )
 
-        # Magnitude spectrogram (with DC component and without mirrored frequencies)
+        # Derive the magnitude spectrogram (with the DC component and without the mirrored frequencies)
         audio_spectrogram = abs(audio_stft[0 : int(window_length / 2) + 1, :, :])
 
-        # Beat spectrum of the spectrograms averaged over the channels (squared to emphasize peaks of periodicitiy)
+        # Compute the beat spectrum of the spectrograms averaged over the channels
+        # (take the square to emphasize peaks of periodicitiy)
         beat_spectrum = _beatspectrum(np.power(np.mean(audio_spectrogram, axis=2), 2))
 
-        # Initialize the background signal
-        background_segment = np.zeros((segment_length2, number_channels))
-
-        # Repeating period in time frames given the period range
+        # Derive the repeating period in time frames given the period range
         repeating_period = _periods(beat_spectrum, period_range2)
 
         # Initialize the background segment
         background_segment = np.zeros((segment_length2, number_channels))
 
         # Loop over the channels
-        for channel_index in range(0, number_channels):
+        for i in range(number_channels):
 
-            # Repeating mask for the current channel
-            repeating_mask = _mask(
-                audio_spectrogram[:, :, channel_index], repeating_period
-            )
+            # Compute the repeating mask for the current channel given the repeating period
+            repeating_mask = _mask(audio_spectrogram[:, :, i], repeating_period)
 
-            # High-pass filtering of the dual foreground
+            # Perform a high-pass filtering of the dual foreground
             repeating_mask[1 : cutoff_frequency2 + 2, :] = 1
 
-            # Mirror the frequency channels
+            # Recover the mirrored frequencies
             repeating_mask = np.concatenate(
                 (repeating_mask, repeating_mask[-2:0:-1, :])
             )
 
-            # Estimated repeating background for the current channel
+            # Synthesize the repeating background for the current channel
             background_segment1 = _istft(
-                repeating_mask * audio_stft[:, :, channel_index],
+                repeating_mask * audio_stft[:, :, i],
                 window_function,
                 step_length,
             )
 
             # Truncate to the original number of samples
-            background_segment[:, channel_index] = background_segment1[
-                0:segment_length2
-            ]
+            background_segment[:, i] = background_segment1[0:segment_length2]
 
-        # Case one segment
+        # Check again if there is a single segment or multiple ones
         if number_segments == 1:
+
+            # Use the segment as the whole signal
             background_signal = background_segment
+
         else:
 
-            # Case first segment
-            if segment_index == 0:
+            # Check if it is one of the first segments or the last one
+            if j == 0:
+
+                # Add the segment to the signal
                 background_signal[0:segment_length2, :] = (
                     background_signal[0:segment_length2, :] + background_segment
                 )
 
-            # Case last segments
-            elif segment_index <= number_segments - 1:
+            elif j <= number_segments - 1:
 
-                # Half windowing of the overlap part of the background signal on the right
-                background_signal[sample_index : sample_index + segment_overlap2, :] = (
-                    background_signal[sample_index : sample_index + segment_overlap2, :]
+                # Perform a half windowing of the overlap part of the background signal on the right
+                background_signal[k : k + segment_overlap2, :] = (
+                    background_signal[k : k + segment_overlap2, :]
                     * segment_window[
                         segment_overlap2 : 2 * segment_overlap2, np.newaxis
                     ]
                 )
 
-                # Half windowing of the overlap part of the background segment on the left
+                # Perform a half windowing of the overlap part of the background segment on the left
                 background_segment[0:segment_overlap2, :] = (
                     background_segment[0:segment_overlap2, :]
                     * segment_window[0:segment_overlap2, np.newaxis]
                 )
-                background_signal[sample_index : sample_index + segment_length2, :] = (
-                    background_signal[sample_index : sample_index + segment_length2, :]
-                    + background_segment
+
+                # Add the segment to the signal
+                background_signal[k : k + segment_length2, :] = (
+                    background_signal[k : k + segment_length2, :] + background_segment
                 )
+
+            # Update the index
+            k = k + segment_step2
 
     return background_signal
 
