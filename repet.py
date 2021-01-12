@@ -30,7 +30,7 @@ Author:
     http://zafarrafii.com
     https://github.com/zafarrafii
     https://www.linkedin.com/in/zafarrafii/
-    01/11/21
+    01/12/21
 """
 
 import numpy as np
@@ -149,7 +149,7 @@ def original(audio_signal, sampling_frequency):
     audio_stft = np.zeros((window_length, number_times, number_channels), dtype=complex)
 
     # Loop over the channels
-    for i in range(0, number_channels):
+    for i in range(number_channels):
 
         # Compute the STFT of the current channel
         audio_stft[:, :, i] = _stft(audio_signal[:, i], window_function, step_length)
@@ -511,7 +511,7 @@ def adaptive(audio_signal, sampling_frequency):
     audio_stft = np.zeros((window_length, number_times, number_channels), dtype=complex)
 
     # Loop over the channels
-    for i in range(0, number_channels):
+    for i in range(number_channels):
 
         # Compute the STFT of the current channel
         audio_stft[:, :, i] = _stft(audio_signal[:, i], window_function, step_length)
@@ -537,7 +537,7 @@ def adaptive(audio_signal, sampling_frequency):
     # Estimate the repeating periods in time frames given the period range
     repeating_periods = _periods(beat_spectrogram, period_range2)
 
-    # Cutoff frequency in frequency channels for the dual high-pass filter of the foreground
+    # Get the cutoff frequency in frequency channels for the dual high-pass filter of the foreground
     cutoff_frequency2 = (
         int(np.ceil(cutoff_frequency * (window_length - 1) / sampling_frequency)) - 1
     )
@@ -546,7 +546,7 @@ def adaptive(audio_signal, sampling_frequency):
     background_signal = np.zeros((number_samples, number_channels))
 
     # Loop over the channels
-    for i in range(0, number_channels):
+    for i in range(number_channels):
 
         # Compute the repeating mask for the current channel given the repeating periods
         repeating_mask = _adaptivemask(
@@ -633,7 +633,7 @@ def sim(audio_signal, sampling_frequency):
         plt.show()
     """
 
-    # Number of samples and channels
+    # Get the number of samples and channels in the audio signal
     number_samples, number_channels = np.shape(audio_signal)
 
     # Set the parameters for the STFT
@@ -643,39 +643,46 @@ def sim(audio_signal, sampling_frequency):
     window_function = scipy.signal.hamming(window_length, sym=False)
     step_length = int(window_length / 2)
 
-    # Number of time frames
-    number_times = int(
-        np.ceil((window_length - step_length + number_samples) / step_length)
+    # Derive the number of time frames (given the zero-padding at the start and the end of the signal)
+    number_times = (
+        int(
+            np.ceil(
+                (
+                    (number_samples + 2 * int(np.floor(window_length / 2)))
+                    - window_length
+                )
+                / step_length
+            )
+        )
+        + 1
     )
 
     # Initialize the STFT
     audio_stft = np.zeros((window_length, number_times, number_channels), dtype=complex)
 
     # Loop over the channels
-    for channel_index in range(0, number_channels):
+    for i in range(number_channels):
 
         # STFT of the current channel
-        audio_stft[:, :, channel_index] = _stft(
-            audio_signal[:, channel_index], window_function, step_length
-        )
+        audio_stft[:, :, i] = _stft(audio_signal[:, i], window_function, step_length)
 
-    # Magnitude spectrogram (with DC component and without mirrored frequencies)
+    # Derive the magnitude spectrogram (with the DC component and without the mirrored frequencies)
     audio_spectrogram = abs(audio_stft[0 : int(window_length / 2) + 1, :, :])
 
-    # Self-similarity of the spectrograms averaged over the channels
+    # Compute the self-similarity matrix of the spectrograms averaged over the channels
     similarity_matrix = _selfsimilaritymatrix(np.mean(audio_spectrogram, axis=2))
 
-    # Similarity distance in time frames
+    # Get the similarity distance in time frames
     similarity_distance2 = int(
         round(similarity_distance * sampling_frequency / step_length)
     )
 
-    # Similarity indices for all the frames
+    # Estimate the similarity indices for all the frames
     similarity_indices = _indices(
         similarity_matrix, similarity_threshold, similarity_distance2, similarity_number
     )
 
-    # Cutoff frequency in frequency channels for the dual high-pass filter of the foreground
+    # Get the cutoff frequency in frequency channels for the dual high-pass filter of the foreground
     cutoff_frequency2 = (
         int(np.ceil(cutoff_frequency * (window_length - 1) / sampling_frequency)) - 1
     )
@@ -684,28 +691,28 @@ def sim(audio_signal, sampling_frequency):
     background_signal = np.zeros((number_samples, number_channels))
 
     # Loop over the channels
-    for channel_index in range(0, number_channels):
+    for i in range(number_channels):
 
-        # Repeating mask for the current channel
-        repeating_mask = _simmask(
-            audio_spectrogram[:, :, channel_index], similarity_indices
-        )
+        # Compute the repeating mask for the current channel given the similarity indices
+        repeating_mask = _simmask(audio_spectrogram[:, :, i], similarity_indices)
 
-        # High-pass filtering of the dual foreground
+        # Perform a high-pass filtering of the dual foreground
         repeating_mask[1 : cutoff_frequency2 + 2, :] = 1
 
-        # Mirror the frequency channels
-        repeating_mask = np.concatenate((repeating_mask, repeating_mask[-2:0:-1, :]))
+        # Recover the mirrored frequencies
+        repeating_mask = np.concatenate(
+            (repeating_mask, repeating_mask[-2:0:-1, :]), axis=0
+        )
 
-        # Estimated repeating background for the current channel
+        # Synthesize the repeating background for the current channel
         background_signal1 = _istft(
-            repeating_mask * audio_stft[:, :, channel_index],
+            repeating_mask * audio_stft[:, :, i],
             window_function,
             step_length,
         )
 
         # Truncate to the original number of samples
-        background_signal[:, channel_index] = background_signal1[0:number_samples]
+        background_signal[:, i] = background_signal1[0:number_samples]
 
     return background_signal
 
@@ -1123,18 +1130,18 @@ def _acorr(data_matrix):
     Compute the autocorrelation of the columns in a matrix using the Wiener–Khinchin theorem.
 
     Input:
-        data_matrix: data matrix (number_points, number_columns)
+        data_matrix: data matrix (number_rows, number_columns)
     Output:
         autocorrelation_matrix: autocorrelation matrix (number_lags, number_columns)
     """
 
-    # Get the number of points in each column
-    number_points = data_matrix.shape[0]
+    # Get the number of rows in each column
+    number_rows = data_matrix.shape[0]
 
     # Compute the power spectral density (PSD) of the columns
     # (with zero-padding for proper autocorrelation)
     data_matrix = np.power(
-        np.abs(np.fft.fft(data_matrix, n=2 * number_points, axis=0)), 2
+        np.abs(np.fft.fft(data_matrix, n=2 * number_rows, axis=0)), 2
     )
 
     # Compute the autocorrelation using the Wiener–Khinchin theorem
@@ -1142,11 +1149,11 @@ def _acorr(data_matrix):
     autocorrelation_matrix = np.real(np.fft.ifft(data_matrix, axis=0))
 
     # Discard the symmetric part
-    autocorrelation_matrix = autocorrelation_matrix[0:number_points, :]
+    autocorrelation_matrix = autocorrelation_matrix[0:number_rows, :]
 
     # Derive the unbiased autocorrelation
     autocorrelation_matrix = np.divide(
-        autocorrelation_matrix, np.arange(number_points, 0, -1)[:, np.newaxis]
+        autocorrelation_matrix, np.arange(number_rows, 0, -1)[:, np.newaxis]
     )
 
     return autocorrelation_matrix
@@ -1211,8 +1218,7 @@ def _beatspectrogram(audio_spectrogram, segment_length, segment_step):
             audio_spectrogram[:, i : i + segment_length]
         )
 
-        # Duplicate the values between segment steps
-        # (for display only; they are actually not needed for the adaptive REPET)
+        # Simply duplicate the values between segment steps
         beat_spectrogram[
             :, i : min(i + segment_step - 1, number_times)
         ] = beat_spectrogram[:, i : i + 1]
@@ -1221,10 +1227,17 @@ def _beatspectrogram(audio_spectrogram, segment_length, segment_step):
 
 
 def _selfsimilaritymatrix(data_matrix):
-    """Self-similarity matrix using the cosine similarity"""
+    """
+    Compute the self-similarity between the columns of a matrix using the cosine similarity.
+
+    Input:
+        data_matrix: data matrix (number_rows, number_columns)
+    Output:
+        similarity_matrix: self-similarity matrix (number_columns, number_columns)
+    """
 
     # Divide each column by its Euclidean norm
-    data_matrix = data_matrix / np.sqrt(sum(np.power(data_matrix, 2), 0))
+    data_matrix = data_matrix / np.sqrt(np.sum(np.power(data_matrix, 2), axis=0))
 
     # Multiply each normalized columns with each other
     similarity_matrix = np.matmul(data_matrix.T, data_matrix)
@@ -1233,13 +1246,21 @@ def _selfsimilaritymatrix(data_matrix):
 
 
 def _similaritymatrix(data_matrix1, data_matrix2):
-    """Similarity matrix using the cosine similarity"""
+    """
+    Compute the similarity between the columns of two matrices using the cosine similarity.
 
-    # Divide each column by its Euclidean norm
-    data_matrix1 = data_matrix1 / np.sqrt(sum(np.power(data_matrix1, 2), 0))
-    data_matrix2 = data_matrix2 / np.sqrt(sum(np.power(data_matrix2, 2), 0))
+    Inputs:
+        data_matrix1: first data matrix (number_rows, number_columns1)
+        data_matrix2: second data matrix (number_rows, number_columns2)
+    Output:
+        similarity_matrix: similarity matrix (number_columns1, number_columns2)
+    """
 
-    # Multiply each normalized columns with each other
+    # Divide each column of the matrices by its Euclidean norm
+    data_matrix1 = data_matrix1 / np.sqrt(np.sum(np.power(data_matrix1, 2), axis=0))
+    data_matrix2 = data_matrix2 / np.sqrt(np.sum(np.power(data_matrix2, 2), axis=0))
+
+    # Multiply the normalized matrices with each other
     similarity_matrix = np.matmul(data_matrix1.T, data_matrix2)
 
     return similarity_matrix
@@ -1291,42 +1312,54 @@ def _periods(beat_spectrogram, period_range):
 
 
 def _localmaxima(data_vector, minimum_value, minimum_distance, number_values):
-    """Local maxima, values and indices"""
+    """
+    Compute the values and indices of the local maxima in a vector given a number of parameters.
 
-    # Number of data points
-    number_data = len(data_vector)
+    Inputs:
+        data_vector: data vector (number_elements, )
+        minimum_value: minimal value for a local maximum
+        minimum_distance: minimal distance between two local maxima
+        number_values: maximal number of local maxima
+    Outputs:
+        maximum_value: values of the local maxima (number_maxima, )
+        maximum_index: indices of the local maxima (number_maxima, )
+    """
 
-    # Initialize maximum indices
+    # Get the number of elements in the vector
+    number_elements = len(data_vector)
+
+    # Initialize an array for the indices of the local maxima
     maximum_indices = np.array([], dtype=int)
 
-    # Loop over the data points
-    for data_index in range(0, number_data):
+    # Loop over the elements in the vector
+    for i in range(number_elements):
 
-        # The local maximum should be greater than the maximum value
-        if data_vector[data_index] >= minimum_value:
+        # Make sure the local maximum is greater than the minimum value
+        if data_vector[i] >= minimum_value:
 
-            # The local maximum should be strictly greater than the neighboring data points within +- minimum distance
+            # Make sure the local maximum is strictly greater than the neighboring values within +- the minimum distance
             if all(
-                data_vector[data_index]
-                > data_vector[max(data_index - minimum_distance, 0) : data_index]
+                data_vector[i] > data_vector[max(i - minimum_distance, 0) : i]
             ) and all(
-                data_vector[data_index]
-                > data_vector[
-                    data_index + 1 : min(data_index + minimum_distance + 1, number_data)
-                ]
+                data_vector[i]
+                > data_vector[i + 1 : min(i + minimum_distance + 1, number_elements)]
             ):
 
-                # Save the maximum index
-                maximum_indices = np.append(maximum_indices, data_index)
+                # Save the index of the local maxima
+                maximum_indices = np.append(maximum_indices, i)
 
-    # Sort the maximum values in descending order
+    # Get the values of the local maxima
     maximum_values = data_vector[maximum_indices]
+
+    # Get the corresponding indices sorted in ascending order
     sort_indices = np.argsort(maximum_values)[::-1]
 
-    # Keep only the top maximum values and indices
+    # Keep only the top values for the local maxima
     number_values = min(number_values, len(maximum_values))
     maximum_values = maximum_values[0:number_values]
-    maximum_indices = maximum_indices[sort_indices[0:number_values]].astype(int)
+
+    # Get the indices of the top local maxima
+    maximum_indices = maximum_indices[sort_indices[0:number_values]]
 
     return maximum_values, maximum_indices
 
@@ -1334,27 +1367,37 @@ def _localmaxima(data_vector, minimum_value, minimum_distance, number_values):
 def _indices(
     similarity_matrix, similarity_threshold, similarity_distance, similarity_number
 ):
-    """Similarity indices from the similarity matrix"""
+    """
+    Compute the similarity indices from the similarity matrix.
 
-    # Number of time frames
+    Inputs:
+        similarity_matrix: similarity matrix (number_frames, number_frames)
+        similarity_threshold: minimal threshold for two frames to be considered similar in [0,1]
+        similarity_distance: minimal distance between two frames to be considered similar in frames
+        similarity_number: maximal number of frames to be considered similar for every frame
+    Output:
+        similarity_indices: list of indices of the similar frames for every frame (number_frames, )
+    """
+
+    # Get the number of time frames
     number_times = similarity_matrix.shape[0]
 
     # Initialize the similarity indices
     similarity_indices = [None] * number_times
 
     # Loop over the time frames
-    for time_index in range(0, number_times):
+    for i in range(number_times):
 
-        # Indices of the local maxima
+        # Get the indices of the local maxima
         _, maximum_indices = _localmaxima(
-            similarity_matrix[:, time_index],
+            similarity_matrix[:, i],
             similarity_threshold,
             similarity_distance,
             similarity_number,
         )
 
-        # Similarity indices for the current time frame
-        similarity_indices[time_index] = maximum_indices
+        # Store the similarity indices for the current time frame
+        similarity_indices[i] = maximum_indices
 
     return similarity_indices
 
@@ -1455,7 +1498,7 @@ def _adaptivemask(audio_spectrogram, repeating_periods, filter_order):
     repeating_spectrogram = np.zeros((number_frequencies, number_times))
 
     # Loop over the time frames
-    for i in range(0, number_times):
+    for i in range(number_times):
 
         # Derive the indices of all the frames for the median filter
         # given the repeating period for the current frame in the spectrogram
@@ -1483,30 +1526,34 @@ def _adaptivemask(audio_spectrogram, repeating_periods, filter_order):
 
 
 def _simmask(audio_spectrogram, similarity_indices):
-    """Repeating mask for the REPET-SIM"""
+    """
+    Compute the repeating mask for REPET-SIM.
 
-    # Number of frequency channels and time frames
+    Input:
+        audio_spectrogram: audio spectrogram (number_frequencies, number_times)
+    Output:
+        similarity_indices: list of indices of the similar frames for every frame (number_frames, )
+    """
+
+    # Get the number of frequency channels and time frames in the spectrogram
     number_frequencies, number_times = np.shape(audio_spectrogram)
 
     # Initialize the repeating spectrogram
     repeating_spectrogram = np.zeros((number_frequencies, number_times))
 
     # Loop over the time frames
-    for time_index in range(0, number_times):
+    for i in range(number_times):
 
-        # Indices of the frames for the median filter
-        time_indices = similarity_indices[time_index]
+        # Get the indices of the similar frames for the median filter
+        time_indices = similarity_indices[i]
 
-        # Median filter on the current time frame
-        repeating_spectrogram[:, time_index] = np.median(
-            audio_spectrogram[:, time_indices], 1
-        )
+        # Compute the median filter for the current frame in the spectrogram
+        repeating_spectrogram[:, i] = np.median(audio_spectrogram[:, time_indices], 1)
 
-    # Make sure the energy in the repeating spectrogram is smaller than in the audio spectrogram, for every
-    # time-frequency bin
+    # Refine the repeating spectrogram by ensuring it has less energy than the original spectrogram
     repeating_spectrogram = np.minimum(audio_spectrogram, repeating_spectrogram)
 
-    # Derive the repeating mask by normalizing the repeating spectrogram by the audio spectrogram
+    # Derive the repeating mask by normalizing the repeating spectrogram by the original spectrogram
     repeating_mask = (repeating_spectrogram + np.finfo(float).eps) / (
         audio_spectrogram + np.finfo(float).eps
     )
