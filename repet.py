@@ -30,7 +30,7 @@ Author:
     http://zafarrafii.com
     https://github.com/zafarrafii
     https://www.linkedin.com/in/zafarrafii/
-    01/12/21
+    01/19/21
 """
 
 import numpy as np
@@ -775,7 +775,7 @@ def simonline(audio_signal, sampling_frequency):
         plt.show()
     """
 
-    # Number of samples and channels
+    # Get the number of samples and channels in the audio signal
     number_samples, number_channels = np.shape(audio_signal)
 
     # Set the parameters for the STFT
@@ -785,39 +785,37 @@ def simonline(audio_signal, sampling_frequency):
     window_function = scipy.signal.hamming(window_length, sym=False)
     step_length = int(window_length / 2)
 
-    # Number of time frames
+    # Derive the number of time frames
     number_times = int(np.ceil((number_samples - window_length) / step_length + 1))
 
-    # Buffer length in time frames
-    buffer_length2 = int(
-        round((buffer_length * sampling_frequency - window_length) / step_length + 1)
-    )
+    # Derive the number of frequency channels
+    number_frequencies = int(window_length / 2 + 1)
+
+    # Get the buffer length in time frames
+    buffer_length2 = round((buffer_length * sampling_frequency) / step_length)
 
     # Initialize the buffer spectrogram
-    buffer_spectrogram = np.zeros(
-        (int(window_length / 2 + 1), buffer_length2, number_channels)
-    )
+    buffer_spectrogram = np.zeros((number_frequencies, buffer_length2, number_channels))
 
-    # Loop over the time frames to compute the buffer spectrogram (the last frame will be the frame to be processed)
-    for time_index in range(0, buffer_length2 - 1):
-
-        # Sample index in the signal
-        sample_index = step_length * time_index
+    # Loop over the time frames to compute the buffer spectrogram
+    # (the last frame will be the frame to be processed)
+    k = 0
+    for j in range(buffer_length2 - 1):
 
         # Loop over the channels
-        for channel_index in range(0, number_channels):
+        for i in range(number_channels):
 
             # Compute the FT of the segment
             buffer_ft = np.fft.fft(
-                audio_signal[sample_index : window_length + sample_index, channel_index]
-                * window_function,
+                audio_signal[k : k + window_length, i] * window_function,
                 axis=0,
             )
 
-            # Derive the spectrum of the frame
-            buffer_spectrogram[:, time_index, channel_index] = abs(
-                buffer_ft[0 : int(window_length / 2 + 1)]
-            )
+            # Derive the magnitude spectrum and save it in the buffer spectrogram
+            buffer_spectrogram[:, j, i] = abs(buffer_ft[0:number_frequencies])
+
+        # Update the index
+        k = k + step_length
 
     # Zero-pad the audio signal at the end
     audio_signal = np.pad(
@@ -827,12 +825,14 @@ def simonline(audio_signal, sampling_frequency):
         constant_values=0,
     )
 
-    # Similarity distance in time frames
-    similarity_distance2 = int(round(similarity_distance * sample_rate / step_length))
+    # Get the similarity distance in time frames
+    similarity_distance2 = int(
+        round(similarity_distance * sampling_frequency / step_length)
+    )
 
-    # Cutoff frequency in frequency channels for the dual high-pass filter of the foreground
+    # Get the cutoff frequency in frequency channels for the dual high-pass filter of the foreground
     cutoff_frequency2 = (
-        int(np.ceil(cutoff_frequency * (window_length - 1) / sample_rate)) - 1
+        int(np.ceil(cutoff_frequency * (window_length - 1) / sampling_frequency)) - 1
     )
 
     # Initialize the background signal
@@ -841,41 +841,33 @@ def simonline(audio_signal, sampling_frequency):
     )
 
     # Loop over the time frames to compute the background signal
-    for time_index in range(buffer_length2 - 1, number_times):
+    for j in range(buffer_length2 - 1, number_times):
 
-        # Sample index in the signal
-        sample_index = step_length * time_index
-
-        # Time index of the current frame
-        current_index = time_index % buffer_length2
+        # Get the time index of the current frame
+        j0 = j % buffer_length2
 
         # Initialize the FT of the current segment
         current_ft = np.zeros((window_length, number_channels), dtype=complex)
 
         # Loop over the channels
-        for channel_index in range(0, number_channels):
+        for i in range(number_channels):
 
             # Compute the FT of the current segment
-            current_ft[:, channel_index] = np.fft.fft(
-                audio_signal[sample_index : window_length + sample_index, channel_index]
-                * window_function,
+            current_ft[:, i] = np.fft.fft(
+                audio_signal[k : k + window_length, i] * window_function,
                 axis=0,
             )
 
-            # Derive the spectrum of the current frame and update the buffer spectrogram
-            buffer_spectrogram[:, current_index, channel_index] = np.abs(
-                current_ft[0 : int(window_length / 2 + 1), channel_index]
-            )
+            # Derive the magnitude spectrum and update the buffer spectrogram
+            buffer_spectrogram[:, j0, i] = np.abs(current_ft[0:number_frequencies, i])
 
-        # Cosine similarity between the spectrum of the current frame and the past frames, for all the channels
+        # Compute the cosine similarity between the current frame and the past ones, for all the channels
         similarity_vector = _similaritymatrix(
             np.mean(buffer_spectrogram, axis=2),
-            np.mean(
-                buffer_spectrogram[:, current_index : current_index + 1, :], axis=2
-            ),
+            np.mean(buffer_spectrogram[:, j0 : j0 + 1, :], axis=2),
         )
 
-        # Indices of the similar frames
+        # Estimate the indices of the similar frames
         _, similarity_indices = _localmaxima(
             similarity_vector[:, 0],
             similarity_threshold,
@@ -884,46 +876,44 @@ def simonline(audio_signal, sampling_frequency):
         )
 
         # Loop over the channels
-        for channel_index in range(0, number_channels):
+        for i in range(number_channels):
 
             # Compute the repeating spectrum for the current frame
             repeating_spectrum = np.median(
-                buffer_spectrogram[:, similarity_indices, channel_index], axis=1
+                buffer_spectrogram[:, similarity_indices, i], axis=1
             )
 
             # Refine the repeating spectrum
             repeating_spectrum = np.minimum(
-                repeating_spectrum, buffer_spectrogram[:, current_index, channel_index]
+                repeating_spectrum, buffer_spectrogram[:, j0, i]
             )
 
             # Derive the repeating mask for the current frame
             repeating_mask = (repeating_spectrum + np.finfo(float).eps) / (
-                buffer_spectrogram[:, current_index, channel_index]
-                + np.finfo(float).eps
+                buffer_spectrogram[:, j0, i] + np.finfo(float).eps
             )
 
-            # High-pass filtering of the dual foreground
+            # Perform a  high-pass filtering of the dual foreground
             repeating_mask[1 : cutoff_frequency2 + 2] = 1
 
-            # Mirror the frequency channels
+            # Recover the mirrored frequencies
             repeating_mask = np.concatenate((repeating_mask, repeating_mask[-2:0:-1]))
 
             # Apply the mask to the FT of the current segment
-            background_ft = repeating_mask * current_ft[:, channel_index]
+            background_ft = repeating_mask * current_ft[:, i]
 
-            # Inverse FT of the current segment
-            background_signal[
-                sample_index : window_length + sample_index, channel_index
-            ] = background_signal[
-                sample_index : window_length + sample_index, channel_index
-            ] + np.real(
-                np.fft.ifft(background_ft, axis=0)
-            )
+            # Take the inverse FT of the current segment
+            background_signal[k : k + window_length, i] = background_signal[
+                k : k + window_length, i
+            ] + np.real(np.fft.ifft(background_ft, axis=0))
 
-    # Truncate the signal to the original length
+        # Update the index
+        k = k + step_length
+
+    # Truncate the signal to the original number of samples
     background_signal = background_signal[0:number_samples, :]
 
-    # Un-window the signal (just in case)
+    # Normalize the signal by the gain introduced by the COLA (if any)
     background_signal = background_signal / sum(
         window_function[0:window_length:step_length]
     )
