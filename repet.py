@@ -30,7 +30,7 @@ Author:
     http://zafarrafii.com
     https://github.com/zafarrafii
     https://www.linkedin.com/in/zafarrafii/
-    01/20/21
+    01/21/21
 """
 
 import numpy as np
@@ -43,7 +43,7 @@ import matplotlib.pyplot as plt
 # Define the cutoff frequency in Hz for the dual high-pass filter of the foreground (vocals are rarely below 100 Hz)
 cutoff_frequency = 100
 
-# Define the period range in seconds for the beat spectrum (for REPET, REPET extented, and the adaptive REPET)
+# Define the period range in seconds for the beat spectrum (for the original REPET, REPET extented, and the adaptive REPET)
 period_range = [1, 10]
 
 # Define the segment length and step in seconds (for REPET extented and the adaptive REPET)
