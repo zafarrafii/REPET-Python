@@ -30,7 +30,7 @@ Author:
     http://zafarrafii.com
     https://github.com/zafarrafii
     https://www.linkedin.com/in/zafarrafii/
-    01/21/21
+    01/22/21
 """
 
 import numpy as np
@@ -154,11 +154,12 @@ def original(audio_signal, sampling_frequency):
         # Compute the STFT of the current channel
         audio_stft[:, :, i] = _stft(audio_signal[:, i], window_function, step_length)
 
-    # Derive the magnitude spectrogram (with the DC component and without the mirrored frequencies)
+    # Derive the magnitude spectrogram
+    # (with the DC component and without the mirrored frequencies)
     audio_spectrogram = abs(audio_stft[0 : int(window_length / 2) + 1, :, :])
 
     # Compute the beat spectrum of the spectrograms averaged over the channels
-    # (take the square to emphasize peaks of periodicitiy)
+    # (take the square to emphasize periodicitiy peaks)
     beat_spectrum = _beatspectrum(np.power(np.mean(audio_spectrogram, axis=2), 2))
 
     # Get the period range in time frames for the beat spectrum
