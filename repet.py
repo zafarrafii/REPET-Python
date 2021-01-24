@@ -30,7 +30,7 @@ Author:
     http://zafarrafii.com
     https://github.com/zafarrafii
     https://www.linkedin.com/in/zafarrafii/
-    01/22/21
+    01/23/21
 """
 
 import numpy as np
@@ -1262,7 +1262,7 @@ def _periods(beat_spectrogram, period_range):
     Compute the repeating period(s) from the beat spectrogram(spectrum) given a period range.
 
     Input:
-        beat_spectrogram: beat spectrogram (or spectrum) (number_frequencies, number_lags) (or (number_lags, ))
+        beat_spectrogram: beat spectrogram (or spectrum) (number_lags, number_times) (or (number_lags, ))
     Output:
         repeating_periods: repeating period(s) in lags (number_periods,) (or scalar)
     """
@@ -1281,7 +1281,7 @@ def _periods(beat_spectrogram, period_range):
             + 1
         )
 
-    # Else, compute the repeating periods as the argmax of the frequency channels given the period range
+    # Else, compute the repeating periods as the argmax for all the time frames given the period range
     else:
         repeating_periods = (
             np.argmax(
@@ -1409,7 +1409,7 @@ def _mask(audio_spectrogram, repeating_period):
     # Estimate the number of segments (including the last partial one)
     number_segments = int(np.ceil(number_times / repeating_period))
 
-    # Zero-pad the end of the spectrogram to have a full last segment
+    # Pad the end of the spectrogram to have a full last segment
     audio_spectrogram = np.pad(
         audio_spectrogram,
         ((0, 0), (0, number_segments * repeating_period - number_times)),
@@ -1417,7 +1417,7 @@ def _mask(audio_spectrogram, repeating_period):
         constant_values=0,
     )
 
-    # Reshape the zero-padded spectrogram to a tensor of size (number_frequencies, number_times, number_segments)
+    # Reshape the padded spectrogram to a tensor of size (number_frequencies, number_times, number_segments)
     audio_spectrogram = np.reshape(
         audio_spectrogram,
         (number_frequencies, repeating_period, number_segments),
