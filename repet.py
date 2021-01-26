@@ -30,7 +30,7 @@ Author:
     http://zafarrafii.com
     https://github.com/zafarrafii
     https://www.linkedin.com/in/zafarrafii/
-    01/23/21
+    01/26/21
 """
 
 import numpy as np
@@ -154,12 +154,11 @@ def original(audio_signal, sampling_frequency):
         # Compute the STFT of the current channel
         audio_stft[:, :, i] = _stft(audio_signal[:, i], window_function, step_length)
 
-    # Derive the magnitude spectrogram
-    # (with the DC component and without the mirrored frequencies)
+    # Derive the magnitude spectrogram (with the DC component and without the mirrored frequencies)
     audio_spectrogram = abs(audio_stft[0 : int(window_length / 2) + 1, :, :])
 
     # Compute the beat spectrum of the spectrograms averaged over the channels
-    # (take the square to emphasize periodicitiy peaks)
+    # (take the square to emphasize peaks of periodicitiy)
     beat_spectrum = _beatspectrum(np.power(np.mean(audio_spectrogram, axis=2), 2))
 
     # Get the period range in time frames for the beat spectrum
@@ -171,9 +170,7 @@ def original(audio_signal, sampling_frequency):
     repeating_period = _periods(beat_spectrum, period_range2)
 
     # Get the cutoff frequency in frequency channels for the dual high-pass filter of the foreground
-    cutoff_frequency2 = int(
-        np.ceil(cutoff_frequency * window_length / sampling_frequency)
-    )
+    cutoff_frequency2 = round(cutoff_frequency * window_length / sampling_frequency)
 
     # Initialize the background signal
     background_signal = np.zeros((number_samples, number_channels))
@@ -185,7 +182,7 @@ def original(audio_signal, sampling_frequency):
         repeating_mask = _mask(audio_spectrogram[:, :, i], repeating_period)
 
         # Perform a high-pass filtering of the dual foreground
-        repeating_mask[1 : cutoff_frequency2 + 2, :] = 1
+        repeating_mask[1 : cutoff_frequency2 + 1, :] = 1
 
         # Recover the mirrored frequencies
         repeating_mask = np.concatenate(
@@ -299,11 +296,9 @@ def extended(audio_signal, sampling_frequency):
     ).astype(int)
 
     # Get the cutoff frequency in frequency channels for the dual high-pass filter of the foreground
-    cutoff_frequency2 = int(
-        np.ceil(cutoff_frequency * window_length / sampling_frequency)
-    )
+    cutoff_frequency2 = round(cutoff_frequency * window_length / sampling_frequency)
 
-    # Initialize background signal
+    # Initialize the background signal
     background_signal = np.zeros((number_samples, number_channels))
 
     # Loop over the segments
@@ -364,7 +359,7 @@ def extended(audio_signal, sampling_frequency):
             repeating_mask = _mask(audio_spectrogram[:, :, i], repeating_period)
 
             # Perform a high-pass filtering of the dual foreground
-            repeating_mask[1 : cutoff_frequency2 + 2, :] = 1
+            repeating_mask[1 : cutoff_frequency2 + 1, :] = 1
 
             # Recover the mirrored frequencies
             repeating_mask = np.concatenate(
@@ -389,7 +384,7 @@ def extended(audio_signal, sampling_frequency):
 
         else:
 
-            # Check if it is one of the first segments or the last one
+            # Check if it is the first segment or the following ones
             if j == 0:
 
                 # Add the segment to the signal
@@ -539,9 +534,7 @@ def adaptive(audio_signal, sampling_frequency):
     repeating_periods = _periods(beat_spectrogram, period_range2)
 
     # Get the cutoff frequency in frequency channels for the dual high-pass filter of the foreground
-    cutoff_frequency2 = (
-        int(np.ceil(cutoff_frequency * (window_length - 1) / sampling_frequency)) - 1
-    )
+    cutoff_frequency2 = round(cutoff_frequency * window_length / sampling_frequency)
 
     # Initialize the background signal
     background_signal = np.zeros((number_samples, number_channels))
@@ -555,7 +548,7 @@ def adaptive(audio_signal, sampling_frequency):
         )
 
         # Perform a high-pass filtering of the dual foreground
-        repeating_mask[1 : cutoff_frequency2 + 2, :] = 1
+        repeating_mask[1 : cutoff_frequency2 + 1, :] = 1
 
         # Recover the mirrored frequencies
         repeating_mask = np.concatenate(
@@ -664,7 +657,7 @@ def sim(audio_signal, sampling_frequency):
     # Loop over the channels
     for i in range(number_channels):
 
-        # STFT of the current channel
+        # Compute the STFT of the current channel
         audio_stft[:, :, i] = _stft(audio_signal[:, i], window_function, step_length)
 
     # Derive the magnitude spectrogram (with the DC component and without the mirrored frequencies)
@@ -684,9 +677,7 @@ def sim(audio_signal, sampling_frequency):
     )
 
     # Get the cutoff frequency in frequency channels for the dual high-pass filter of the foreground
-    cutoff_frequency2 = (
-        int(np.ceil(cutoff_frequency * (window_length - 1) / sampling_frequency)) - 1
-    )
+    cutoff_frequency2 = round(cutoff_frequency * window_length / sampling_frequency)
 
     # Initialize the background signal
     background_signal = np.zeros((number_samples, number_channels))
@@ -698,7 +689,7 @@ def sim(audio_signal, sampling_frequency):
         repeating_mask = _simmask(audio_spectrogram[:, :, i], similarity_indices)
 
         # Perform a high-pass filtering of the dual foreground
-        repeating_mask[1 : cutoff_frequency2 + 2, :] = 1
+        repeating_mask[1 : cutoff_frequency2 + 1, :] = 1
 
         # Recover the mirrored frequencies
         repeating_mask = np.concatenate(
@@ -832,9 +823,7 @@ def simonline(audio_signal, sampling_frequency):
     )
 
     # Get the cutoff frequency in frequency channels for the dual high-pass filter of the foreground
-    cutoff_frequency2 = (
-        int(np.ceil(cutoff_frequency * (window_length - 1) / sampling_frequency)) - 1
-    )
+    cutoff_frequency2 = round(cutoff_frequency * window_length / sampling_frequency)
 
     # Initialize the background signal
     background_signal = np.zeros(
@@ -895,7 +884,7 @@ def simonline(audio_signal, sampling_frequency):
             )
 
             # Perform a  high-pass filtering of the dual foreground
-            repeating_mask[1 : cutoff_frequency2 + 2] = 1
+            repeating_mask[1 : cutoff_frequency2 + 1] = 1
 
             # Recover the mirrored frequencies
             repeating_mask = np.concatenate((repeating_mask, repeating_mask[-2:0:-1]))
@@ -1173,7 +1162,7 @@ def _beatspectrogram(audio_spectrogram, segment_length, segment_step):
     """
     Compute the beat spectrogram using the beat sectrum.
 
-    Input:
+    Inputs:
         audio_spectrogram: audio spectrogram (number_frequencies, number_times)
         segment_length: segment length in seconds for the segmentation
         segment_step: step length in seconds for the segmentation
@@ -1209,7 +1198,7 @@ def _beatspectrogram(audio_spectrogram, segment_length, segment_step):
             audio_spectrogram[:, i : i + segment_length]
         )
 
-        # Simply duplicate the values between segment steps
+        # Replicate the values between segment steps
         beat_spectrogram[
             :, i : min(i + segment_step - 1, number_times)
         ] = beat_spectrogram[:, i : i + 1]
@@ -1345,12 +1334,13 @@ def _localmaxima(data_vector, minimum_value, minimum_distance, number_values):
     # Get the corresponding indices sorted in ascending order
     sort_indices = np.argsort(maximum_values)[::-1]
 
-    # Keep only the top values for the local maxima
+    # Keep only the sorted indices for the top values
     number_values = min(number_values, len(maximum_values))
-    maximum_values = maximum_values[0:number_values]
+    sort_indices = sort_indices[0:number_values]
 
-    # Get the indices of the top local maxima
-    maximum_indices = maximum_indices[sort_indices[0:number_values]]
+    # Get the values and indices of the top local maxima
+    maximum_values = maximum_values[sort_indices]
+    maximum_indices = maximum_indices[sort_indices]
 
     return maximum_values, maximum_indices
 
@@ -1397,10 +1387,11 @@ def _mask(audio_spectrogram, repeating_period):
     """
     Compute the repeating mask for REPET.
 
-    Input:
+    Inputs:
         audio_spectrogram: audio spectrogram (number_frequencies, number_times)
-    Output:
         repeating_period: repeating period in lag
+    Output:
+        repeating_mask: repeating mask (number_frequencies, number_times)
     """
 
     # Get the number of frequency channels and time frames in the spectrogram
@@ -1471,11 +1462,12 @@ def _adaptivemask(audio_spectrogram, repeating_periods, filter_order):
     """
     Compute the repeating mask for the adaptive REPET.
 
-    Input:
+    Inputs:
         audio_spectrogram: audio spectrogram (number_frequencies, number_times)
-    Output:
         repeating_periods: repeating periods in lag
         filter_order: filter order for the median filter in number of time frames
+    Output:
+        repeating_mask: repeating mask (number_frequencies, number_times)
     """
 
     # Get the number of frequency channels and time frames in the spectrogram
@@ -1520,10 +1512,11 @@ def _simmask(audio_spectrogram, similarity_indices):
     """
     Compute the repeating mask for REPET-SIM.
 
-    Input:
+    Inputs:
         audio_spectrogram: audio spectrogram (number_frequencies, number_times)
-    Output:
         similarity_indices: list of indices of the similar frames for every frame (number_frames, )
+    Output:
+        repeating_mask: repeating mask (number_frequencies, number_times)
     """
 
     # Get the number of frequency channels and time frames in the spectrogram
