@@ -30,7 +30,7 @@ Author:
     http://zafarrafii.com
     https://github.com/zafarrafii
     https://www.linkedin.com/in/zafarrafii/
-    01/26/21
+    01/27/21
 """
 
 import numpy as np
@@ -883,7 +883,7 @@ def simonline(audio_signal, sampling_frequency):
                 buffer_spectrogram[:, j0, i] + np.finfo(float).eps
             )
 
-            # Perform a  high-pass filtering of the dual foreground
+            # Perform a high-pass filtering of the dual foreground
             repeating_mask[1 : cutoff_frequency2 + 1] = 1
 
             # Recover the mirrored frequencies
