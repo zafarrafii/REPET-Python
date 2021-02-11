@@ -231,7 +231,7 @@ plt.title("Foreground spectrogram (dB)")
 plt.show()
 ```
 
-<img src="images/repet_python/repet_adaptive.png" width="1000">
+<img src="images/repet_adaptive.png" width="1000">
 
 
 ### sim
